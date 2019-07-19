@@ -1,0 +1,35 @@
+<RCC>
+    <qresource prefix="/GDC2/Icon">
+        <file>FileOpen.png</file>
+        <file>FileClose.png</file>
+        <file>StyleSheet.css</file>
+        <file>NavClose.png</file>
+        <file>NavOpen.png</file>
+        <file>McsdRecv.png</file>
+        <file>McsdSend.png</file>
+        <file alias="CoorImport">CoorImport.png</file>
+        <file>Close.png</file>
+        <file>RhoCal.png</file>
+        <file>RhoExport.png</file>
+        <file>Coordinate.ico</file>
+        <file>Error.ico</file>
+        <file>Navigate.png</file>
+        <file>ScatterHide.png</file>
+        <file>ScatterShow.png</file>
+        <file>GraphShow.png</file>
+        <file>Horizontal.png</file>
+        <file>Vertical.png</file>
+        <file>DataSave.png</file>
+        <file>DataPrep.png</file>
+        <file>Undo.png</file>
+        <file>Main.png</file>
+        <file>Export.ico</file>
+        <file>Export.png</file>
+        <file>Table.png</file>
+        <file>RX.png</file>
+        <file>TX.png</file>
+        <file>XY.png</file>
+        <file>clear.png</file>
+        <file>main.ico</file>
+    </qresource>
+</RCC>

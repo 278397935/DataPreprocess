@@ -1,0 +1,125 @@
+/**********************************************************************
+ * (c) Copyright 2015 CSU.  All rights reserved.
+ *
+ * GDC2 professional: Style sheet
+ *
+ *  Created on: 2015-6-3
+ *      Author: chenglong.li
+ *     Context: First version
+ */
+
+*{
+    font-family:microsoft yahei;
+}
+
+QMenuBar {
+    background:   rgb(230, 230 , 230);    /* menubar空白处 */
+    border-style: none;
+    spacing: 2px;        /* Qmenu间隔 */
+    padding: 3px 3px;    /* 上下 & 左右 边框间隔*/
+}
+
+QMenuBar::item {
+    background:   rgb(230, 230 , 230);    /* menu空白处 */
+    spacing: 0px;
+    padding: 8px 8px;   /* 上下 & 左右 边框间隔*/
+}
+
+QMenuBar::item:pressed {
+    background: rgb(200, 200, 200);
+}
+
+/* QMenuBar item hover */
+QMenuBar::item:selected {
+    background: rgb(200, 200, 200);
+}
+
+/* QMenuBar item hover */
+QMenu::item:selected {
+    background: rgb(200, 200, 200);
+}
+
+QMenu::item {
+    padding: 4px 40px;
+}
+
+/* Scroll bar: horizontal */
+QScrollBar:horizontal {
+    border: 1px none rgb(230, 230, 230);
+    background: white;
+    height: 13px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:horizontal
+{
+    background: rgb(230, 230, 230);
+    border-radius:0px;
+    min-height: 13px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: rgb(180, 180, 180);
+}
+
+QScrollBar::add-line:horizontal {
+    border: 0px none white;
+    background: white;
+    width: 0px
+
+}
+
+QScrollBar::sub-line:horizontal {
+    border: 0px none white;
+    background: white;
+    width: 0px
+
+}
+
+/* Scroll bar: vertical */
+QScrollBar:vertical {
+    border: 0px none rgb(230, 230, 230);
+    background: white;
+    width: 13px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:vertical
+{
+    background: rgb(230, 230, 230);
+    border-radius:0px;
+    min-height: 13px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgb(180, 180, 180);
+}
+
+/* QTextEdit */
+QTextEdit, QTableView {
+    border: 1px solid rgb(230, 230, 230);
+}
+
+/* QTreeView */
+QTreeView{
+    border: 1px solid rgb(160, 160, 160);
+}
+
+/*
+QTreeView::item:hover {
+    background: rgb(230, 230, 230);
+}
+
+QTreeView::item:selected {
+    background: rgb(180, 180, 180);
+
+}
+
+QTreeView{
+    color: rgb(0,0,0);
+    border: 1px solid rgb(230, 230, 230);
+}
+*/
+
+
+
