@@ -98,7 +98,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_actionImportTX_triggered()
 {
-    QString oStrFileName = QFileDialog::getOpenFileName(this, "打开电流文件", QString("%1").arg(this->LastDirRead()), "电流文件(Current_*.csv)");
+    QString oStrFileName = QFileDialog::getOpenFileName(this, "导入电流文件",
+                                                        QString("%1").arg(this->LastDirRead()),
+                                                        "电流文件(Current_*.csv)");
 
     if(oStrFileName.length() != 0)
     {
@@ -419,14 +421,14 @@ void MainWindow::initPlotCurve()
 
     /* Set Axis title */
     //QwtText oTxtXAxisTitle( "频率(Hz)" );
-    //    QwtText oTxtYAxisTitle( "电场(mV)" );
+    QwtText oTxtYAxisTitle( tr("电场/电流") );
     QwtText oTxtErrAxisTitle(tr("相对均方误差(%)"));
     //oTxtXAxisTitle.setFont( oFont );
     //oTxtYAxisTitle.setFont( oFont );
     oTxtErrAxisTitle.setFont( oFont );
     //ui->plotCurve->setAxisTitle(QwtPlot::xBottom, oTxtXAxisTitle);
-    //    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
-    ui->plotCurve->setAxisTitle(QwtPlot::yRight,  oTxtErrAxisTitle);
+    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,  oTxtYAxisTitle);
+    ui->plotCurve->setAxisTitle(QwtPlot::yRight, oTxtErrAxisTitle);
 
     /* Draw the canvas grid */
     QwtPlotGrid *poGrid = new QwtPlotGrid();
