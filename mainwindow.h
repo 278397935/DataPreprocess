@@ -114,7 +114,7 @@ private slots:
     void on_actionExportRX_triggered();
 
     void on_actionClose_triggered();
-    void on_actionClear_triggered();
+    //void on_actionClear_triggered();
 
     /* Read data from RX, update Scatter\Error\Curve */
     void on_actionRecovery_triggered();

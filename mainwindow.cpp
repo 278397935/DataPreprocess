@@ -173,15 +173,15 @@ void MainWindow::on_actionClose_triggered()
     this->close();
 }
 
-void MainWindow::on_actionClear_triggered()
-{
-    QMessageBox oMsgBox(QMessageBox::Question, "清空数据", "确定清空数据?", QMessageBox::Yes | QMessageBox::No, NULL);
+//void MainWindow::on_actionClear_triggered()
+//{
+//    QMessageBox oMsgBox(QMessageBox::Question, "清空数据", "确定清空数据?", QMessageBox::Yes | QMessageBox::No, NULL);
 
-    //    if(oMsgBox.exec() == QMessageBox::Yes)
-    //    {
-    //        poDb->clearData();
-    //    }
-}
+//    //    if(oMsgBox.exec() == QMessageBox::Yes)
+//    //    {
+//    //        poDb->clearData();
+//    //    }
+//}
 
 void MainWindow::showMsg(QString oStrMsg)
 {

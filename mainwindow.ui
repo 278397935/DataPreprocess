@@ -132,7 +132,6 @@
    </attribute>
    <addaction name="actionImportTX"/>
    <addaction name="actionImportRX"/>
-   <addaction name="actionClear"/>
    <addaction name="separator"/>
    <addaction name="separator"/>
    <addaction name="actionCutterH"/>
@@ -205,18 +204,6 @@
    </property>
    <property name="toolTip">
     <string>恢复(Ctrl+R)</string>
-   </property>
-  </action>
-  <action name="actionClear">
-   <property name="icon">
-    <iconset resource="Res/Icon.qrc">
-     <normaloff>:/GDC2/Icon/clear.png</normaloff>:/GDC2/Icon/clear.png</iconset>
-   </property>
-   <property name="text">
-    <string>清除数据</string>
-   </property>
-   <property name="toolTip">
-    <string>清除数据</string>
    </property>
   </action>
   <action name="actionExportRX">
