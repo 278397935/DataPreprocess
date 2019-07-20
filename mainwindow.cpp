@@ -1133,7 +1133,7 @@ void MainWindow::on_actionExportRX_triggered()
              <<poRX->iDevCh<<tr(" ")
             <<poRX->adF.at(i)<<tr(" ")
             <<this->getI(poRX->adF.at(i))<<tr(" ")
-            <<poRX->adE.at(i)<<tr(" ")
+            <<poRX->adE.at(i)*1000<<tr(" ")
             <<poRX->adErr.at(i)<<"\n";
         }
     }
