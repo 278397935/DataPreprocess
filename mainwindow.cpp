@@ -1,13 +1,72 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QPainter>
+#include <QProxyStyle>
+
+class CustomTabStyle : public QProxyStyle
+{
+public:
+    QSize sizeFromContents(ContentsType type, const QStyleOption *option,
+                           const QSize &size, const QWidget *widget) const
+    {
+        QSize s = QProxyStyle::sizeFromContents(type, option, size, widget);
+        if (type == QStyle::CT_TabBarTab)
+        {
+            s.transpose();
+            s.rwidth()  = 150; // 设置每个tabBar中item的大小
+            s.rheight() = 50;
+        }
+        return s;
+    }
+
+    void drawControl(ControlElement element, const QStyleOption *option, QPainter *painter, const QWidget *widget) const
+    {
+        if (element == CE_TabBarTabLabel)
+        {
+            if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab *>(option))
+            {
+                QRect allRect = tab->rect;
+
+                if (tab->state & QStyle::State_Selected)
+                {
+                    painter->save();
+                    //painter->setPen(Qt::darkBlue);
+                    painter->setBrush(QBrush(Qt::blue));
+                    painter->drawRect(allRect.adjusted(6, 6, -6, -6));
+                    painter->restore();
+                }
+
+                QTextOption option;
+                option.setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+
+                if (tab->state & QStyle::State_Selected)
+                {
+                    painter->setPen(0xf8fcff);
+                }
+                else
+                {
+                    painter->setPen(0x5d5d5d);
+                }
+
+                painter->drawText(allRect, tab->text, option);
+                return;
+            }
+        }
+
+        if (element == CE_TabBarTab)
+        {
+            QProxyStyle::drawControl(element, option, painter, widget);
+        }
+    }
+};
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
-    this->setWindowTitle("WFEM_数据预处理程序_" + QDateTime::currentDateTime().toString("yyyyMMddAP"));
+    this->setWindowTitle("Tang_广域数据预处理工具_" + QDateTime::currentDateTime().toString("yyyyMMddAP"));
 
     qDebugV0()<<QThread::currentThreadId();
 
@@ -28,8 +87,6 @@ MainWindow::MainWindow(QWidget *parent) :
     gmapCurveData.clear();
 
     gmapCurveItem.clear();
-
-    gmapFI.clear();
 
     /* Init Global Var */
     gpoScatter = NULL;
@@ -89,6 +146,33 @@ MainWindow::MainWindow(QWidget *parent) :
     sMkList.poRight  = NULL;
 
     ui->actionImportRX->setEnabled(false);
+
+    poDb = new MyDatabase();
+    poDb->connect();
+
+    connect(poDb, SIGNAL(SigModelTX(QSqlTableModel*)), this, SLOT(showTableTX(QSqlTableModel*)));
+    connect(poDb, SIGNAL(SigModelRX(QSqlTableModel*)), this, SLOT(showTableRX(QSqlTableModel*)));
+    connect(poDb, SIGNAL(SigModelXY(QSqlTableModel*)), this, SLOT(showTableXY(QSqlTableModel*)));
+
+    connect(poDb, SIGNAL(SigModelRho(QSqlTableModel*)), this, SLOT(showTableRho(QSqlTableModel*)));
+
+    ui->tabWidget->setTabText(0, "电流");
+    ui->tabWidget->setTabText(1, "场值");
+    ui->tabWidget->setTabText(2, "坐标");
+    ui->tabWidget->setTabText(3, "广域视电阻率");
+
+    ui->tableViewTX->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->tableViewRX->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->tableViewXY->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->tableViewRho->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
+    ui->tabWidget->setTabPosition(QTabWidget::East);
+    ui->tabWidget->tabBar()->setStyle(new CustomTabStyle);
+
+    connect(poDb, SIGNAL(SigMsg(QString)), this, SLOT(showMsg(QString)));
+
+    poCalRho = new CalRhoThread(poDb);
+    connect(poCalRho, SIGNAL(SigMsg(QString)), this, SLOT(showMsg(QString)));
 }
 
 MainWindow::~MainWindow()
@@ -98,46 +182,14 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_actionImportTX_triggered()
 {
-    QString oStrFileName = QFileDialog::getOpenFileName(this, "导入电流文件",
+    QString oStrFileName = QFileDialog::getOpenFileName(this,
+                                                        "打开电流文件",
                                                         QString("%1").arg(this->LastDirRead()),
-                                                        "电流文件(Current_*.csv)");
+                                                        "电流文件(FFT_AVG_I_T*.csv)");
 
     if(oStrFileName.length() != 0)
     {
-        gmapFI.clear();
-
-        /*  */
-        QFile oFile(oStrFileName);
-        QString oStrLineCSV;
-        oStrLineCSV.clear();
-
-        if(oFile.open(QIODevice::ReadOnly | QIODevice::Text))
-        {
-            QTextStream oStream(&oFile);
-
-            oStream.seek(0);
-
-            QStringList aoStrLineCSV;
-
-            QString oStrLineCSV;
-
-            while(!oStream.atEnd())
-            {
-                oStrLineCSV.clear();
-                oStrLineCSV = oStream.readLine();
-
-                if(!oStrLineCSV.isEmpty())
-                {
-                    aoStrLineCSV.clear();
-
-                    aoStrLineCSV = oStrLineCSV.split(',', QString::SkipEmptyParts);
-
-                    gmapFI.insert(aoStrLineCSV.first().toDouble(), aoStrLineCSV.last().toDouble());
-                }
-            }
-        }
-
-        oFile.close();
+        poDb->importTX(oStrFileName);
 
         this->LastDirWrite( oStrFileName );
 
@@ -147,7 +199,10 @@ void MainWindow::on_actionImportTX_triggered()
 
 void MainWindow::on_actionImportRX_triggered()
 {
-    QStringList aoStrRX = QFileDialog::getOpenFileNames(this, "打开电场文件", QString("%1").arg(this->LastDirRead()), "电场文件(Detail_L*.csv)");
+    QStringList aoStrRX = QFileDialog::getOpenFileNames(this,
+                                                        "打开电场文件",
+                                                        QString("%1").arg(this->LastDirRead()),
+                                                        "电场文件(FFT_SEC_V_T*.csv)");
 
     if(aoStrRX.isEmpty())
     {
@@ -155,9 +210,20 @@ void MainWindow::on_actionImportRX_triggered()
         return;
     }
 
+
+    bool ok;
+    QString oStrLineId = QInputDialog::getText(this, tr("输入线号"),
+                                               tr("线号:"), QLineEdit::Normal,
+                                               "NULL", &ok);
+    if (!ok || oStrLineId.isEmpty())
+    {
+        return;
+    }
+
+
     foreach(QString oStrCSV, aoStrRX)
     {
-        RX *poRX = new RX(oStrCSV);
+        RX *poRX = new RX(oStrCSV , oStrLineId);
 
         gapoRX.append( poRX);
     }
@@ -173,15 +239,15 @@ void MainWindow::on_actionClose_triggered()
     this->close();
 }
 
-//void MainWindow::on_actionClear_triggered()
-//{
-//    QMessageBox oMsgBox(QMessageBox::Question, "清空数据", "确定清空数据?", QMessageBox::Yes | QMessageBox::No, NULL);
+void MainWindow::on_actionClear_triggered()
+{
+    QMessageBox oMsgBox(QMessageBox::Question, "清空数据", "确定清空数据?", QMessageBox::Yes | QMessageBox::No, NULL);
 
-//    //    if(oMsgBox.exec() == QMessageBox::Yes)
-//    //    {
-//    //        poDb->clearData();
-//    //    }
-//}
+    //    if(oMsgBox.exec() == QMessageBox::Yes)
+    //    {
+    //        poDb->clearData();
+    //    }
+}
 
 void MainWindow::showMsg(QString oStrMsg)
 {
@@ -190,8 +256,6 @@ void MainWindow::showMsg(QString oStrMsg)
 
 void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
 {
-    gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
-
     QVector<double> adR = this->getR(gpoSelectedRX->adF, gpoSelectedRX->adE);
 
     poCurve->setSamples(gpoSelectedRX->adF, adR);
@@ -219,7 +283,7 @@ void MainWindow::drawCurve()
 
     qSort(adF);
 
-    //qDebugV0()<<adF;
+    qDebugV0()<<adF;
 
     /* Fill ticks */
     QList<double> adTicks[QwtScaleDiv::NTickTypes];
@@ -234,11 +298,11 @@ void MainWindow::drawCurve()
     {
         /* Curve title, cut MCSD_ & suffix*/
         const QwtText oTxtTitle( QString("L%1-%2_D%3-%4_%5")
-                                 .arg(poRX->iLineId)
-                                 .arg(poRX->iSiteId)
-                                 .arg(poRX->iDevId)
-                                 .arg(poRX->iDevCh)
-                                 .arg(poRX->oStrTag) );
+                                 .arg(poRX->goStrLineId)
+                                 .arg(poRX->goStrSiteId)
+                                 .arg(poRX->giDevId)
+                                 .arg(poRX->giDevCh)
+                                 .arg(poRX->goStrTag) );
 
         /* Create a curve pointer */
         QwtPlotCurve *poCurve = new QwtPlotCurve( oTxtTitle );
@@ -306,18 +370,6 @@ void MainWindow::resizeScaleScatter()
     }
 }
 
-double MainWindow::getI(double dF)
-{
-    double dI = 1.0;
-
-    if(gmapFI.contains(dF))
-    {
-        dI = gmapFI.value(dF);
-    }
-
-    return dI;
-}
-
 QVector<double> MainWindow::getR(QVector<double> adF, QVector<double> adE)
 {
     QVector<double> adR;
@@ -325,7 +377,7 @@ QVector<double> MainWindow::getR(QVector<double> adF, QVector<double> adE)
 
     for(int i = 0; i < adF.count(); i++)
     {
-        adR.append( adE.at(i)/this->getI(adF.at(i)) );
+        adR.append( adE.at(i)/poDb->getI(adF.at(i)) );
     }
 
     return adR;
@@ -421,14 +473,14 @@ void MainWindow::initPlotCurve()
 
     /* Set Axis title */
     //QwtText oTxtXAxisTitle( "频率(Hz)" );
-    QwtText oTxtYAxisTitle( tr("电场/电流") );
+    //    QwtText oTxtYAxisTitle( "电场(mV)" );
     QwtText oTxtErrAxisTitle(tr("相对均方误差(%)"));
     //oTxtXAxisTitle.setFont( oFont );
     //oTxtYAxisTitle.setFont( oFont );
     oTxtErrAxisTitle.setFont( oFont );
     //ui->plotCurve->setAxisTitle(QwtPlot::xBottom, oTxtXAxisTitle);
-    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,  oTxtYAxisTitle);
-    ui->plotCurve->setAxisTitle(QwtPlot::yRight, oTxtErrAxisTitle);
+    //    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
+    ui->plotCurve->setAxisTitle(QwtPlot::yRight,  oTxtErrAxisTitle);
 
     /* Draw the canvas grid */
     QwtPlotGrid *poGrid = new QwtPlotGrid();
@@ -571,7 +623,7 @@ void MainWindow::shiftCurveSelect(QTreeWidgetItem *poItem, int iCol)
     {
         QwtPlotCurve *poCurve = gmapCurveItem.key(poItem);
 
-        //qDebugV0()<<poCurve->title().text();
+        qDebugV0()<<poCurve->title().text();
 
         switch (iCol)
         {
@@ -664,7 +716,7 @@ void MainWindow::markerMoved()
 
     double dE = gpoSelectedRX->getE(arE);
 
-    double dI = this->getI(gpoSelectedCurve->data()->sample(giSelectedIndex).x());
+    double dI = poDb->getI(gpoSelectedCurve->data()->sample(giSelectedIndex).x());
 
     /* All points on selected curve */
     QPolygonF aoPointCurve = this->currentCurvePoints();
@@ -1097,48 +1149,39 @@ void MainWindow::LastDirWrite(QString oStrFileName)
 
 void MainWindow::on_actionExportRX_triggered()
 {
-    QString oStrReserve = QDateTime::currentDateTime().toString("yyyyMMddAP");
+    QString oStrDefault = QDateTime::currentDateTime().toString("yyyy年MM月dd日HH时mm分ss秒_广域视电阻率结果");
 
-    QString oStrFileName = QFileDialog::getSaveFileName(this, tr("Save File"),
-                                                        this->LastDirRead() + "/"+oStrReserve+".dat",
-                                                        tr("data(*.dat)"));
+    QString oStrFileName = QFileDialog::getSaveFileName(this, tr("保存广域视电阻率计算结果"),
+                                                       QString("%1/%2.csv").arg(this->LastDirRead()).arg(oStrDefault),
+                                                       "(*.csv *.txt *.dat)");
 
     QFile oFile(oStrFileName);
-    if(!oFile.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+    bool openOk = oFile.open(QIODevice::WriteOnly|QIODevice::Truncate|QIODevice::Text);
+    if(!openOk)
     {
-        qDebugV5()<< "Cannot open file for writing:"<<qPrintable(oFile.errorString());
-        return;
+        return ;
     }
 
-    QTextStream oOut(&oFile);
+    QTextStream outStream(&oFile);
 
-    oOut.setCodec(QTextCodec::codecForName("GB2312"));
+    QAbstractItemModel *poModel = ui->tableViewRho->model();
 
-    oOut<<tr("线号")<<tr(" ")
-       <<tr("点号")<<tr(" ")
-      <<tr("仪器号")<<tr(" ")
-     <<tr("通道号")<<tr(" ")
-    <<tr("频率/Hz")<<tr(" ")
-    <<tr("电流/A")<<tr(" ")
-    <<tr("平均电场/μV")<<tr(" ")
-    <<tr("相对均方误差/%")<<"\n";
-
-    foreach(RX *poRX, gapoRX)
+    for(int i = 0; i < poModel->columnCount(); i++)
     {
-        for(int i = 0; i < poRX->adF.count(); i++)
+        outStream<<poModel->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()<<",";
+    }
+    outStream<<endl;
+
+    for(int i = 0; i < poModel->rowCount(); i++)
+    {
+        for(int j = 0 ; j < poModel->columnCount(); j++)
         {
-            oOut<<poRX->iLineId<<tr(" ")
-               <<poRX->iSiteId<<tr(" ")
-              <<poRX->iDevId<<tr(" ")
-             <<poRX->iDevCh<<tr(" ")
-            <<poRX->adF.at(i)<<tr(" ")
-            <<this->getI(poRX->adF.at(i))<<tr(" ")
-            <<poRX->adE.at(i)*1000<<tr(" ")
-            <<poRX->adErr.at(i)<<"\n";
+            outStream<<poModel->data(poModel->index(i,j), Qt::DisplayRole).toString()<<",";
         }
+        outStream<<endl;
     }
 
-    oOut.flush();
+    outStream.flush();
     oFile.close();
 
     this->showMsg(QString("数据导出成功\n\n%1").arg(oStrFileName));
@@ -1155,9 +1198,7 @@ void MainWindow::on_actionRecovery_triggered()
         return;
     }
 
-    gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
-
-    /* Read scatter from Sctatter , then update and error */
+    /* Read scatter from Sctatter table, then update curve && error Table */
     gpoSelectedRX->renewScatter(giSelectedIndex);
 
     /* Draw scatter(Point from scatter) */
@@ -1197,4 +1238,67 @@ void MainWindow::on_actionSave_triggered()
     this->resizeScaleScatter();
 
     ui->plotScatter->replot();
+}
+
+void MainWindow::on_actionCalRho_triggered()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+
+    /* Import RX */
+    poDb->importRX(gapoRX);
+
+    QString oStrFileName = QFileDialog::getOpenFileName(this,
+                                                        "打开坐标文件",
+                                                        QString("%1").arg(this->LastDirRead()),
+                                                        "坐标文件(*.dat *.txt *.csv)");
+
+    if(oStrFileName.length() != 0)
+    {
+        poDb->importXY(oStrFileName);
+    }
+
+    poCalRho->getAB();
+
+    QList<STATION> aoStation = poDb->getStation();
+
+    foreach(STATION oStation, aoStation)
+    {
+        poCalRho->CalRho(oStation);
+    }
+}
+
+void MainWindow::showTableTX(QSqlTableModel *poModel)
+{
+    ui->tableViewTX->setModel(poModel);
+
+    ui->tableViewTX->repaint();
+
+    ui->tabWidget->setCurrentIndex(0);
+}
+
+void MainWindow::showTableRX(QSqlTableModel *poModel)
+{
+    ui->tableViewRX->setModel(poModel);
+
+    ui->tableViewRX->repaint();
+
+    ui->tabWidget->setCurrentIndex(1);
+}
+
+void MainWindow::showTableXY(QSqlTableModel *poModel)
+{
+    ui->tableViewXY->setModel(poModel);
+
+    ui->tableViewXY->repaint();
+
+    ui->tabWidget->setCurrentIndex(2);
+}
+
+void MainWindow::showTableRho(QSqlTableModel *poModel)
+{
+    ui->tableViewRho->setModel(poModel);
+
+    ui->tableViewRho->repaint();
+
+    ui->tabWidget->setCurrentIndex(3);
 }

@@ -19,7 +19,7 @@ class RX : public QObject
 {
     Q_OBJECT
 public:
-    explicit RX(QString oStrFileName, QObject *parent = 0);
+    explicit RX(QString oStrFileName, QString oStrLineId, QObject *parent = 0);
 
     /* csv 文件名 */
     QString oStrCSV;
@@ -28,9 +28,11 @@ public:
 
     QVector<double> adF, adE, adErr;
 
-    int iDevId, iDevCh, iLineId, iSiteId;
+    QString goStrLineId, goStrSiteId;
 
-    QString oStrTag;
+    int giDevId, giDevCh;
+
+    QString goStrTag;
 
     void importRX(QString oStrFileName);
 

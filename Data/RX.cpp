@@ -1,46 +1,54 @@
 #include "Data/RX.h"
 
 
-RX::RX(QString oStrFileName, QObject *parent):QObject(parent)
+RX::RX(QString oStrFileName, QString oStrLineId, QObject *parent):QObject(parent)
 {
     oStrCSV = oStrFileName;
+
+    goStrLineId = oStrLineId;
 
     this->importRX(oStrFileName);
 }
 
-/* Import csv file */
+/* Import csv file FFT_SEC_V_S988_D133_CH1.csv */
 void RX::importRX(QString oStrFileName)
 {
     QFileInfo oFileInfo(oStrFileName);
 
     QString oStrBaseName = oFileInfo.baseName();
 
-    QStringList aoStrStationInfo = oStrBaseName.split('_', QString::SkipEmptyParts );
+    int iPos = oStrBaseName.lastIndexOf(")_S");
+
+    //qDebugV0()<<iPos;
+
+    QString oStrTemp = oStrBaseName.mid(iPos + 2);
+
+    //qDebugV0()<<oStrTemp;
+
+    QStringList aoStrStationInfo = oStrTemp.split('_', QString::SkipEmptyParts );
 
     //qDebugV0()<<aoStrStationInfo;
 
-    /* LineId */
-    QString oStrLineId = aoStrStationInfo.at(1);
-    oStrLineId.remove(0,1);
-    iLineId = oStrLineId.toInt();
+//    /* LineId */
+//    goStrLineId = oStrLineId;
 
     /* SiteId */
-    QString oStrSiteId= aoStrStationInfo.at(2);
+    QString oStrSiteId= aoStrStationInfo.at(0);
     oStrSiteId.remove(0,1);
-    iSiteId = oStrSiteId.toInt();
+    goStrSiteId = oStrSiteId;
 
     /* DevId */
-    QString oStrDevId = aoStrStationInfo.at(3);
+    QString oStrDevId = aoStrStationInfo.at(1);
     oStrDevId.remove(0,1);
-    iDevId = oStrDevId.toInt();
+    giDevId = oStrDevId.toInt();
 
     /* DevCh */
-    QString oStrDevCh= aoStrStationInfo.at(4);
-    oStrDevCh.remove(0,1);
-    iDevCh = oStrDevCh.toInt();
+    QString oStrDevCh= aoStrStationInfo.at(2);
+    oStrDevCh.remove(0,2);
+    giDevCh = oStrDevCh.toInt();
 
     /* Component identifier */
-    oStrTag = aoStrStationInfo.at(5);
+    goStrTag = "Ex";
 
     /*  */
     QFile oFile(oStrFileName);
@@ -72,7 +80,7 @@ void RX::importRX(QString oStrFileName)
 
                 aoStrLineCSV.removeFirst();
 
-                QVector<double>  adData;
+                QVector<double> adData;
                 adData.clear();
 
                 foreach(QString oStrData, aoStrLineCSV)
@@ -101,14 +109,9 @@ void RX::importRX(QString oStrFileName)
     //qDebugV0()<<aadScatter;
 }
 
-/************************************************************
- *
- */
 void RX::renewScatter(int iIndex)
 {
     /*  */
-    qDebugV0()<<iIndex<<oStrCSV;
-
     QFile oFile(oStrCSV);
     QString oStrLineCSV;
     oStrLineCSV.clear();
@@ -137,7 +140,7 @@ void RX::renewScatter(int iIndex)
 
             aoStrLineCSV = oStrLineCSV.split(',', QString::SkipEmptyParts);
 
-            //qDebugV0()<< aoStrLineCSV.first().toDouble();
+//            qDebugV0()<< aoStrLineCSV.first().toDouble();
 
             aoStrLineCSV.removeFirst();
 

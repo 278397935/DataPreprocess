@@ -22,6 +22,11 @@
 #include "Picker/MarkerPicker.h"
 
 
+#include "CalRhoThread.h"
+
+#include "MyDatabase.h"
+
+
 /* Marker line list */
 typedef struct _MARKER_LIST
 {
@@ -44,7 +49,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    QMap<double, double> gmapFI;
+    MyDatabase *poDb;
+
+    CalRhoThread *poCalRho;
 
     QVector<RX*> gapoRX;
 
@@ -100,8 +107,6 @@ private:
 
     QVector<double> getR(QVector<double> adF, QVector<double> adE);
 
-    double getI(double dF);
-
     /* Read last Dir log file, get last Dir(Previous directory) */
     QString LastDirRead();
 
@@ -114,7 +119,7 @@ private slots:
     void on_actionExportRX_triggered();
 
     void on_actionClose_triggered();
-    //void on_actionClear_triggered();
+    void on_actionClear_triggered();
 
     /* Read data from RX, update Scatter\Error\Curve */
     void on_actionRecovery_triggered();
@@ -122,6 +127,14 @@ private slots:
     void showMsg(QString oStrMsg);
 
     void on_actionSave_triggered();
+
+    void on_actionCalRho_triggered();
+
+    void showTableTX(QSqlTableModel*poModel);
+    void showTableRX(QSqlTableModel*poModel);
+    void showTableXY(QSqlTableModel*poModel);
+    void showTableRho(QSqlTableModel*poModel);
+
 
 public slots:
     /* Insert Horizontal Marker line */
@@ -156,7 +169,7 @@ public slots:
 
     void drawError();
 
-    void switchHighlightCurve();
+    void switchHighlightCurve();    
 
 signals:
     void SigSaveScatter(RX*, qreal , QVector<qreal>);

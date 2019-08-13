@@ -26,69 +26,128 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout" stretch="6,0,1">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="3,0,1">
-        <item>
-         <widget class="QwtPlot" name="plotCurve">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <widget class="QWidget" name="pagePretreatment">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="6,0,1">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout" stretch="3,0,1">
+            <item>
+             <widget class="QwtPlot" name="plotCurve">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="buttonScatterShift">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Res/Icon.qrc">
+                <normaloff>:/GDC2/Icon/ScatterShow.png</normaloff>:/GDC2/Icon/ScatterShow.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QwtPlot" name="plotScatter">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonLegend">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="Res/Icon.qrc">
+              <normaloff>:/GDC2/Icon/NavOpen.png</normaloff>:/GDC2/Icon/NavOpen.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTreeWidget" name="treeWidgetLegend">
+            <column>
+             <property name="text">
+              <string notr="true">1</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+         </layout>
         </item>
-        <item>
-         <widget class="QPushButton" name="buttonScatterShift">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="pageCalRho">
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <widget class="QTabWidget" name="tabWidget">
+          <property name="currentIndex">
+           <number>0</number>
           </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="Res/Icon.qrc">
-            <normaloff>:/GDC2/Icon/ScatterShow.png</normaloff>:/GDC2/Icon/ScatterShow.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QwtPlot" name="plotScatter">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
+          <widget class="QWidget" name="tabTX">
+           <attribute name="title">
+            <string>页</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_7">
+            <item row="0" column="0">
+             <widget class="QTableView" name="tableViewTX"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabRX">
+           <attribute name="title">
+            <string>Tab 2</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_3">
+            <item row="0" column="0">
+             <widget class="QTableView" name="tableViewRX"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabXY">
+           <attribute name="title">
+            <string>页</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_4">
+            <item row="0" column="0">
+             <widget class="QTableView" name="tableViewXY"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabRho">
+           <attribute name="title">
+            <string>页</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="0" column="0">
+             <widget class="QTableView" name="tableViewRho"/>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButtonLegend">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="Res/Icon.qrc">
-          <normaloff>:/GDC2/Icon/NavOpen.png</normaloff>:/GDC2/Icon/NavOpen.png</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTreeWidget" name="treeWidgetLegend">
-        <column>
-         <property name="text">
-          <string notr="true">1</string>
-         </property>
-        </column>
-       </widget>
-      </item>
-     </layout>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -98,7 +157,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>17</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -132,12 +191,15 @@
    </attribute>
    <addaction name="actionImportTX"/>
    <addaction name="actionImportRX"/>
+   <addaction name="actionClear"/>
    <addaction name="separator"/>
    <addaction name="separator"/>
    <addaction name="actionCutterH"/>
    <addaction name="actionCutterV"/>
    <addaction name="actionSave"/>
    <addaction name="actionRecovery"/>
+   <addaction name="separator"/>
+   <addaction name="actionCalRho"/>
    <addaction name="separator"/>
    <addaction name="actionExportRX"/>
    <addaction name="separator"/>
@@ -149,7 +211,7 @@
      <normaloff>:/GDC2/Icon/TX.png</normaloff>:/GDC2/Icon/TX.png</iconset>
    </property>
    <property name="text">
-    <string>导入电流文件</string>
+    <string>打开电流文件</string>
    </property>
   </action>
   <action name="actionCutterV">
@@ -158,10 +220,7 @@
      <normaloff>:/GDC2/Icon/Vertical.png</normaloff>:/GDC2/Icon/Vertical.png</iconset>
    </property>
    <property name="text">
-    <string>垂直裁剪(Ctrl+V)</string>
-   </property>
-   <property name="toolTip">
-    <string>垂直裁剪(Ctrl+V)</string>
+    <string>垂直裁剪</string>
    </property>
   </action>
   <action name="actionCutterH">
@@ -170,10 +229,7 @@
      <normaloff>:/GDC2/Icon/Horizontal.png</normaloff>:/GDC2/Icon/Horizontal.png</iconset>
    </property>
    <property name="text">
-    <string>水平裁剪(Ctrl+H)</string>
-   </property>
-   <property name="toolTip">
-    <string>水平裁剪(Ctrl+H)</string>
+    <string>水平裁剪</string>
    </property>
   </action>
   <action name="actionSave">
@@ -206,6 +262,18 @@
     <string>恢复(Ctrl+R)</string>
    </property>
   </action>
+  <action name="actionClear">
+   <property name="icon">
+    <iconset resource="Res/Icon.qrc">
+     <normaloff>:/GDC2/Icon/clear.png</normaloff>:/GDC2/Icon/clear.png</iconset>
+   </property>
+   <property name="text">
+    <string>清除数据</string>
+   </property>
+   <property name="toolTip">
+    <string>清除数据</string>
+   </property>
+  </action>
   <action name="actionExportRX">
    <property name="icon">
     <iconset resource="Res/Icon.qrc">
@@ -230,12 +298,22 @@
     <string>导入电场文件</string>
    </property>
   </action>
+  <action name="actionCalRho">
+   <property name="icon">
+    <iconset resource="Res/Icon.qrc">
+     <normaloff>:/GDC2/Icon/RhoCal.png</normaloff>:/GDC2/Icon/RhoCal.png</iconset>
+   </property>
+   <property name="text">
+    <string>CalRho</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>QwtPlot</class>
-   <extends>QGraphicsView</extends>
+   <extends>QFrame</extends>
    <header>qwt_plot.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

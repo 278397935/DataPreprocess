@@ -51,6 +51,8 @@
 /* Last Dir log */
 #define LASTDIR    "LastDirLog.ini"
 
+#define FloatPrecision 3
+
 enum FILE_TYPE
 {
     FILE_RX = 0,
