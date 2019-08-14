@@ -113,6 +113,14 @@ private:
     /* Save the current project Dir as the most recently opened directory */
     void LastDirWrite(QString oStrFileName);
 
+    void initQwtPlotTx();
+
+    void drawTx(  const QVector< double > adF,  const QVector< double > adI );
+
+    void initQwtPlotRx();
+
+    void drawRx();
+
 private slots:
     void on_actionImportTX_triggered();
     void on_actionImportRX_triggered();
@@ -134,7 +142,6 @@ private slots:
     void showTableRX(QSqlTableModel*poModel);
     void showTableXY(QSqlTableModel*poModel);
     void showTableRho(QSqlTableModel*poModel);
-
 
 public slots:
     /* Insert Horizontal Marker line */
@@ -169,7 +176,7 @@ public slots:
 
     void drawError();
 
-    void switchHighlightCurve();    
+    void switchHighlightCurve();
 
 signals:
     void SigSaveScatter(RX*, qreal , QVector<qreal>);

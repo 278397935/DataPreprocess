@@ -52,16 +52,14 @@ public:
     MyDatabase *poDb;
 
     /* TX A&B coordinates */
-    QVector3D vA;
-    QVector3D vB;
+    Position oAB;
 
     QPointF ptA;
     QPointF ptB;
     QPointF ptTxMid;
 
     /* RX MN coordinates */
-    QVector3D vM;
-    QVector3D vN;
+    Position oMN;
 
     QPointF ptM;
     QPointF ptN;
@@ -87,7 +85,7 @@ signals:
     void SigMsg(QString);
 
     /* Rho result struct */
-    void SigRhoResult(QString oStrTitle, QVector<double> , QVector<double>);
+    void SigRhoResult(QList<RhoResult>);
 
 public slots:
 

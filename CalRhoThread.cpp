@@ -179,11 +179,8 @@ void CalRhoThread::CalRho(STATION oStation)
 
         oRhoResult.oStation = oStation;
 
-        oRhoResult.vA = vA;
-        oRhoResult.vB = vB;
-
-        oRhoResult.vM = vM;
-        oRhoResult.vN = vN;
+        oRhoResult.oAB = oAB;
+        oRhoResult.oMN = oMN;
 
         oRhoResult.dF = dF;
         oRhoResult.dI = dI;
@@ -191,50 +188,30 @@ void CalRhoThread::CalRho(STATION oStation)
         oRhoResult.dErr = dErr;
         oRhoResult.dRho = dRho;
 
-        qDebugV0()<<dRho;
-
         aoRhoResult.append(oRhoResult);
     }
 
     poDb->importRho(aoRhoResult);
 
-    //    QString oStrTitle = QString("L%1_S%2_D%3_C%4_%5")
-    //            .arg(goStation.oStrLineId)
-    //            .arg(goStation.oStrSiteId)
-    //            .arg(goStation.iDevId)
-    //            .arg(goStation.iDevCh)
-    //            .arg(goStation.oStrTag);
-
-    //    QVector<double> adF, adRho;
-
-    //    foreach(RhoResult oRhoResult,aoRhoResult)
-    //    {
-    //        adF.append(oRhoResult.dF);
-    //        adRho.append(oRhoResult.dRho);
-    //    }
-
-    //    emit SigRhoResult(oStrTitle, adF, adRho);
+    emit SigRhoResult(aoRhoResult);
 }
 
 bool CalRhoThread::getAB()
 {
     /* TX, AB */
-    QPair<QVector3D, QVector3D> aoAB = poDb->getCoordinate("A", "B");
+    oAB = poDb->getCoordinate("A", "B");
 
-    if(aoAB.first == QVector3D(0,0,0) && aoAB.second == QVector3D(0,0,0))
+    if(oAB.dMX == 0 && oAB.dMY == 0 && oAB.dMZ == 0 && oAB.dNX == 0 && oAB.dNY == 0 && oAB.dNZ == 0 )
     {
         emit SigMsg("AB\n坐标获取失败！");
         return false;
     }
 
-    vA = aoAB.first;
-    vB = aoAB.second;
+    ptA.setX(oAB.dMX);
+    ptA.setY(oAB.dMY);
 
-    ptA.setX(vA.x());
-    ptA.setY(vA.y());
-
-    ptB.setX(vB.x());
-    ptB.setY(vB.y());
+    ptB.setX(oAB.dNX);
+    ptB.setY(oAB.dNY);
 
     ptTxMid.setX( (ptA.x() + ptB.x())/2 );
     ptTxMid.setY( (ptA.y() + ptB.y())/2 );
@@ -251,19 +228,17 @@ bool CalRhoThread::getAB()
 bool CalRhoThread::CoorRead(STATION oStation)
 {
     /* RX, Line Site*/
-    QPair<QVector3D, QVector3D> aoPoint = poDb->getCoordinate(oStation.oStrLineId, oStation.oStrSiteId);
-    if(aoPoint.first == QVector3D(0,0,0) && aoPoint.second == QVector3D(0,0,0))
+    oMN = poDb->getCoordinate(oStation.oStrLineId, oStation.oStrSiteId);
+    if(oMN.dMX == 0 && oMN.dMY == 0 && oMN.dMZ == 0 && oMN.dNX == 0 && oMN.dNY == 0 && oMN.dNZ == 0 )
     {
         return false;
     }
-    vM = aoPoint.first;
-    vN = aoPoint.second;
 
-    ptM.setX(vM.x());
-    ptM.setY(vM.y());
+    ptM.setX(oMN.dMX);
+    ptM.setY(oMN.dMY);
 
-    ptN.setX(vN.x());
-    ptN.setY(vN.y());
+    ptN.setX(oMN.dNX);
+    ptN.setY(oMN.dNY);
 
     ptRxMid.setX( (ptM.x() + ptN.x())/2 );
     ptRxMid.setY( (ptM.y() + ptN.y())/2 );

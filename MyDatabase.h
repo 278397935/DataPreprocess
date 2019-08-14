@@ -35,11 +35,8 @@ typedef struct _RhoResult
 {
     STATION oStation;
 
-    QVector3D vA;
-    QVector3D vB;
-
-    QVector3D vM;
-    QVector3D vN;
+    Position oAB;
+    Position oMN;
 
     double dF;
     double dI;
@@ -71,7 +68,7 @@ public:
 
     double getErr(STATION oStation, double dF);
 
-    QPair<QVector3D, QVector3D> getCoordinate(QString oStrLineId, QString oStrSiteId);
+    Position getCoordinate(QString oStrLineId, QString oStrSiteId);
 
     QList<STATION> getStation();
 

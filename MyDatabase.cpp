@@ -251,18 +251,18 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
                          .arg(oRhoResult.dField)
                          .arg(oRhoResult.dErr)
                          .arg(oRhoResult.dRho)
-                         .arg(QString::number(oRhoResult.vA.x(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vA.y(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vA.z(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vB.x(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vB.y(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vB.z(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vM.x(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vM.y(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vM.z(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vN.x(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vN.y(), 10, FloatPrecision))
-                         .arg(QString::number(oRhoResult.vN.z(), 10, FloatPrecision))))
+                         .arg(QString::number(oRhoResult.oAB.dMX, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oAB.dMY, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oAB.dMZ, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oAB.dNX, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oAB.dNY, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oAB.dNZ, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oMN.dMX, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oMN.dMY, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oMN.dMZ, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oMN.dNX, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oMN.dNY, 10, FloatPrecision))
+                         .arg(QString::number(oRhoResult.oMN.dNZ, 10, FloatPrecision))))
 
         {
             qDebugV5()<<oQuery.lastError().text();
@@ -412,12 +412,19 @@ double MyDatabase::getErr(STATION oStation, double dF)
     return dErr;
 }
 
-QPair<QVector3D, QVector3D> MyDatabase::getCoordinate(QString oStrLineId, QString oStrSiteId)
+Position MyDatabase::getCoordinate(QString oStrLineId, QString oStrSiteId)
 {
     QSqlQuery oQuery(*poDb);
-    QPair<QVector3D, QVector3D> aoPoint;
 
-    QVector3D oPointM( 0, 0 , 0 ), oPointN( 0, 0, 0 );
+    Position aoPt;
+
+    aoPt.dMX = 0;
+    aoPt.dMY = 0;
+    aoPt.dMZ = 0;
+
+    aoPt.dNX = 0;
+    aoPt.dNY = 0;
+    aoPt.dNZ = 0;
 
     if( ! oQuery.exec(QString("SELECT MX, MY, MH, NX, NY, NH FROM Coordinate WHERE "
                               "LineId = '%1' AND SiteId = '%2'")
@@ -428,29 +435,16 @@ QPair<QVector3D, QVector3D> MyDatabase::getCoordinate(QString oStrLineId, QStrin
     }
     if(oQuery.first())
     {
-        oPointM.setX( oQuery.value("MX").toDouble() );
-        oPointM.setY( oQuery.value("MY").toDouble() );
-        oPointM.setZ( oQuery.value("MH").toDouble() );
+        aoPt.dMX = oQuery.value("MX").toDouble();
+        aoPt.dMY = oQuery.value("MY").toDouble();
+        aoPt.dMZ = oQuery.value("MH").toDouble();
 
-        oPointN.setX( oQuery.value("NX").toDouble() );
-        oPointN.setY( oQuery.value("NY").toDouble() );
-        oPointN.setZ( oQuery.value("NH").toDouble() );
+        aoPt.dNX = oQuery.value("NX").toDouble();
+        aoPt.dNY = oQuery.value("NY").toDouble();
+        aoPt.dNZ = oQuery.value("NH").toDouble();
     }
 
-    aoPoint.first  = oPointM;
-    aoPoint.second = oPointN;
-
-    qDebugV0()<<oStrLineId
-             <<oStrSiteId
-            <<fixed<<qSetRealNumberPrecision(3)<<oQuery.value("MX").toDouble()
-           <<oQuery.value("MY").toDouble()
-          <<oQuery.value("MH").toDouble()
-
-         <<oQuery.value("NX").toDouble()
-        <<oQuery.value("NY").toDouble()
-       <<oQuery.value("NH").toDouble();
-
-    return aoPoint;
+    return aoPt;
 }
 
 QList<STATION> MyDatabase::getStation()

@@ -82,6 +82,17 @@ struct STATION_INFO
     quint32 uiFCnt;
 };
 
+struct Position
+{
+    double dMX;
+    double dMY;
+    double dMZ;
+
+    double dNX;
+    double dNY;
+    double dNZ;
+};
+
 
 
 #endif // PUBLICDEF_H
