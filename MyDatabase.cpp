@@ -238,7 +238,7 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
     {
         /* LineID, SiteID, DevID, DevCH, CompTag, F, I, Field, Rho */
         if( !oQuery.exec(QString("INSERT INTO Rho VALUES('%1', '%2', %3, %4, '%5',"
-                                 "%6, %7, %8, %9, %10, "
+                                 "%6, %7, %8, '%9', %10, "
                                  "'%11', '%12', '%13', '%14', '%15', '%16', "
                                  "'%17', '%18', '%19', '%20', '%21', '%22')")
                          .arg(oRhoResult.oStation.oStrLineId)
@@ -249,7 +249,7 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
                          .arg(oRhoResult.dF)
                          .arg(oRhoResult.dI)
                          .arg(oRhoResult.dField)
-                         .arg(oRhoResult.dErr)
+                         .arg(QString("%1%").arg(QString::number(oRhoResult.dErr, 10, 3)))
                          .arg(oRhoResult.dRho)
                          .arg(QString::number(oRhoResult.oAB.dMX, 10, FloatPrecision))
                          .arg(QString::number(oRhoResult.oAB.dMY, 10, FloatPrecision))
@@ -300,6 +300,10 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
     poModel->setHeaderData(21, Qt::Horizontal, QStringLiteral("NH"));
     poModel->select();
 
+for(int i = 0; i < poModel->rowCount(); i++)
+{
+
+}
     emit SigModelRho(poModel);
 }
 

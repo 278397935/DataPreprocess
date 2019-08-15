@@ -545,7 +545,7 @@ void MainWindow::initPlotCurve()
 void MainWindow::initPlotScatter()
 {
     ui->plotScatter->setFrameStyle(QFrame::NoFrame);
-    ui->plotScatter->enableAxis(QwtPlot::xBottom, false);
+    ui->plotScatter->enableAxis(QwtPlot::xBottom, true);
     ui->plotScatter->enableAxis(QwtPlot::yLeft,   true);
     ui->plotScatter->setAutoDelete ( true );
     ui->plotScatter->replot();

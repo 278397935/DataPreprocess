@@ -195,7 +195,7 @@ double RX::getErr(QVector<double> adData)
         dTemp += qPow((adData.at(i) - dAvg)/dAvg, 2);
     }
 
-    dError = qSqrt(dTemp/adData.count());
+    dError = qSqrt(dTemp/adData.count()) * 100;
 
     return dError;
 }
