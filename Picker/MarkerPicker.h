@@ -4,7 +4,7 @@
  * GDC2DP professional: MarkerPicker
  *
  * Created on: 2016-05-04
- * Author: Haiping.Yang
+ * e-mail box: 278397935@qq.com
  * Context: First version
  */
 #ifndef SCATTERPICKER_H

@@ -29,6 +29,6 @@
         <file>TX.png</file>
         <file>XY.png</file>
         <file>clear.png</file>
-        <file>main.ico</file>
+        <file>horse.ico</file>
     </qresource>
 </RCC>

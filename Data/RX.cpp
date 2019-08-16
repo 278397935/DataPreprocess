@@ -102,11 +102,6 @@ void RX::importRX(QString oStrFileName)
     }
 
     oFile.close();
-
-    //qDebugV0()<<iDevId<<iDevCh<<iLineId<<iSiteId<<oStrTag;
-
-    //qDebugV0()<<adF;
-    //qDebugV0()<<aadScatter;
 }
 
 void RX::renewScatter(int iIndex)

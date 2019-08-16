@@ -60,7 +60,7 @@ public:
 
     void importRho( QList<RhoResult> aoRhoResult);
 
-    QList<double> getF(STATION oStation);
+    QVector<double> getF(STATION oStation);
 
     double getI(double dF);
 

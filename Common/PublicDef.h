@@ -1,26 +1,8 @@
-﻿/**********************************************************************
- * (c) Copyright 2016 xxx.  All rights reserved.
- *
- * GDC2 data process: Public define
- *
- *  Created on: 2015-3-5
- *      Author: chenglong.li
- */
-
-#ifndef PUBLICDEF_H
+﻿#ifndef PUBLICDEF_H
 #define PUBLICDEF_H
 
 #include <QtCore>
 
-/****************************************************************/
-/* SoftWare Information*/
-/****************************************************************/
-#define SoftWareName    ("GDC Data Process")
-#define SoftWareVer     ("1.0")
-#define SoftWareMagic   ("777")
-
-#define SoftAbout       ("<h2>GDC Data Process v1.0</h2><p>Copyright &copy; 2016 Central South University.\n--------------------------------------------------\n<P>Developer: Chenglong.Li, Haiping.Yang, Shangeshi.Wen")
-#define SoftSupport     ("<h2>GDC Data Process v1.0</h2><P>Developer: Chenglong.Li, Haiping.Yang<p>Mail: lcl650@qq.com\n")
 
 /****************************************************************/
 /* Debug define*/

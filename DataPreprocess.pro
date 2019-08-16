@@ -37,8 +37,11 @@ FORMS    += \
 RESOURCES += \
     Res/Icon.qrc
 
+
+RC_FILE = Res/logo.rc
+
 DEFINES     += QT_DLL QWT_DLL
 
-LIBS += -L "C:\Qt\Qt5.7.0\5.7\mingw53_32\lib" -lqwtd
+LIBS += -L "C:\Qt\Qt5.7.0\5.7\mingw53_32\lib" -lqwt
 
 INCLUDEPATH += "C:\Qt\Qt5.7.0\5.7\mingw53_32\include\Qwt"

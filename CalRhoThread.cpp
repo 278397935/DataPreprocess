@@ -4,7 +4,7 @@
  * GDC2DP professional: window rho
  *
  * Created on: 2016-05-04
- * Author: Haiping.Yang
+ * e-mail box: 278397935@qq.com
  * Context: First version
  *
  * 本程序为根据实测电场计算准双极源电阻率的程序，先读出实测电场，然后根据其反算电阻率。
@@ -24,8 +24,6 @@ CalRhoThread::CalRhoThread(MyDatabase *poDatabase, QObject *parent) :
     QThread(parent)
 {
     poDb = poDatabase;
-
-
 }
 
 /****************************************************************************
@@ -64,9 +62,12 @@ void CalRhoThread::CalRho(STATION oStation)
     double dMN = LengthGet(ptM, ptN);
 
     /* Frequency list */
-    QList<double> adF;
+    QVector<double> adF;
     adF.clear();
     adF = poDb->getF(oStation);
+
+    QVector<double> adRho;
+    adRho.clear();
 
     /* Rho list */
     QList<RhoResult> aoRhoResult;
@@ -188,12 +189,14 @@ void CalRhoThread::CalRho(STATION oStation)
         oRhoResult.dErr = dErr;
         oRhoResult.dRho = dRho;
 
+        adRho.append(dRho);
+
         aoRhoResult.append(oRhoResult);
     }
 
     poDb->importRho(aoRhoResult);
 
-    emit SigRhoResult(aoRhoResult);
+    emit SigRho(oStation, adF, adRho);
 }
 
 bool CalRhoThread::getAB()

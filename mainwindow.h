@@ -121,6 +121,8 @@ private:
 
     void drawRx();
 
+    void initQwtPlotRho();
+
 private slots:
     void on_actionImportTX_triggered();
     void on_actionImportRX_triggered();
@@ -142,6 +144,8 @@ private slots:
     void showTableRX(QSqlTableModel*poModel);
     void showTableXY(QSqlTableModel*poModel);
     void showTableRho(QSqlTableModel*poModel);
+
+    void drawRho(STATION oStation, QVector<double> adF, QVector<double>adRho);
 
 public slots:
     /* Insert Horizontal Marker line */

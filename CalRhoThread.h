@@ -4,7 +4,7 @@
  * GDC2DP professional: window rho
  *
  * Created on: 2016-05-04
- * Author: Haiping.Yang
+ * e-mail box: 278397935@qq.com
  * Context: First version
  *
  * 本程序为根据实测电场计算准双极源电阻率的程序，先读出实测电场，然后根据其反算电阻率。
@@ -85,7 +85,7 @@ signals:
     void SigMsg(QString);
 
     /* Rho result struct */
-    void SigRhoResult(QList<RhoResult>);
+    void SigRho(STATION, QVector<double>, QVector<double>);
 
 public slots:
 

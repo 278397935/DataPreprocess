@@ -21,7 +21,10 @@
   </property>
   <property name="windowIcon">
    <iconset resource="Res/Icon.qrc">
-    <normaloff>:/GDC2/Icon/main.ico</normaloff>:/GDC2/Icon/main.ico</iconset>
+    <normaloff>:/GDC2/Icon/horse.ico</normaloff>:/GDC2/Icon/horse.ico</iconset>
+  </property>
+  <property name="windowOpacity">
+   <double>1.000000000000000</double>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -168,6 +171,16 @@
            <layout class="QGridLayout" name="gridLayout_5">
             <item row="0" column="0">
              <widget class="QTableView" name="tableViewRho"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabRhoGraph">
+           <attribute name="title">
+            <string>页</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_8">
+            <item row="0" column="0">
+             <widget class="QwtPlot" name="qwtPlotRho"/>
             </item>
            </layout>
           </widget>

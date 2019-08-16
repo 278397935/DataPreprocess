@@ -300,18 +300,14 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
     poModel->setHeaderData(21, Qt::Horizontal, QStringLiteral("NH"));
     poModel->select();
 
-for(int i = 0; i < poModel->rowCount(); i++)
-{
-
-}
     emit SigModelRho(poModel);
 }
 
 
-QList<double> MyDatabase::getF(STATION oStation)
+QVector<double> MyDatabase::getF(STATION oStation)
 {
     QSqlQuery oQuery(*poDb);
-    QList<double> adF;
+    QVector<double> adF;
     adF.clear();
 
     if( ! oQuery.exec(QString("SELECT DISTINCT F FROM RX WHERE "
