@@ -1,11 +1,9 @@
 #include "Data/RX.h"
 
 
-RX::RX(QString oStrFileName, QString oStrLineId, QObject *parent):QObject(parent)
+RX::RX(QString oStrFileName, QObject *parent):QObject(parent)
 {
     oStrCSV = oStrFileName;
-
-    goStrLineId = oStrLineId;
 
     this->importRX(oStrFileName);
 }
@@ -17,7 +15,7 @@ void RX::importRX(QString oStrFileName)
 
     QString oStrBaseName = oFileInfo.baseName();
 
-    int iPos = oStrBaseName.lastIndexOf(")_S");
+    int iPos = oStrBaseName.lastIndexOf(")_L");
 
     //qDebugV0()<<iPos;
 
@@ -29,26 +27,27 @@ void RX::importRX(QString oStrFileName)
 
     //qDebugV0()<<aoStrStationInfo;
 
-//    /* LineId */
-//    goStrLineId = oStrLineId;
+    /* LineId */
+    QString oStrLineId= aoStrStationInfo.at(0);
+    goStrLineId = oStrLineId.remove(0,1);
 
     /* SiteId */
-    QString oStrSiteId= aoStrStationInfo.at(0);
-    oStrSiteId.remove(0,1);
-    goStrSiteId = oStrSiteId;
+    QString oStrSiteId= aoStrStationInfo.at(1);
+    goStrSiteId = oStrSiteId.remove(0,1);
 
     /* DevId */
-    QString oStrDevId = aoStrStationInfo.at(1);
+    QString oStrDevId = aoStrStationInfo.at(2);
     oStrDevId.remove(0,1);
     giDevId = oStrDevId.toInt();
 
     /* DevCh */
-    QString oStrDevCh= aoStrStationInfo.at(2);
+    QString oStrDevCh= aoStrStationInfo.at(3);
     oStrDevCh.remove(0,2);
     giDevCh = oStrDevCh.toInt();
 
     /* Component identifier */
-    goStrTag = "Ex";
+    QString oStrCompTag= aoStrStationInfo.at(4);
+    goStrCompTag = oStrCompTag;
 
     /*  */
     QFile oFile(oStrFileName);

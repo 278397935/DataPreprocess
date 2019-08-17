@@ -228,24 +228,13 @@ void MainWindow::on_actionImportRX_triggered()
 
     if(aoStrRX.isEmpty())
     {
-        QMessageBox::warning(this, "警告","未选中有效文件，/n请重新选择！");
+        QMessageBox::warning(this, "警告","未选中有效文件，\n请重新选择！");
         return;
     }
-
-
-    bool ok;
-    QString oStrLineId = QInputDialog::getText(this, tr("输入线号"),
-                                               tr("线号:"), QLineEdit::Normal,
-                                               "NULL", &ok);
-    if (!ok || oStrLineId.isEmpty())
-    {
-        return;
-    }
-
 
     foreach(QString oStrCSV, aoStrRX)
     {
-        RX *poRX = new RX(oStrCSV , oStrLineId);
+        RX *poRX = new RX(oStrCSV);
 
         gapoRX.append( poRX);
     }
@@ -340,7 +329,7 @@ void MainWindow::drawCurve()
                                  .arg(poRX->goStrSiteId)
                                  .arg(poRX->giDevId)
                                  .arg(poRX->giDevCh)
-                                 .arg(poRX->goStrTag) );
+                                 .arg(poRX->goStrCompTag) );
 
         /* Create a curve pointer */
         QwtPlotCurve *poCurve = new QwtPlotCurve( oTxtTitle );
@@ -1086,7 +1075,7 @@ void MainWindow::drawRx()
                                  .arg(poRX->goStrSiteId)
                                  .arg(poRX->giDevId)
                                  .arg(poRX->giDevCh)
-                                 .arg(poRX->goStrTag) );
+                                 .arg(poRX->goStrCompTag) );
 
         /* Create a curve pointer */
         QwtPlotCurve *poCurve = new QwtPlotCurve( oTxtTitle );
