@@ -93,6 +93,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     gpoErrorCurve = NULL;
 
+    gpoSelectedCurve = NULL;
+
     gpoSelectedRX = NULL;
 
     poMarkerPicker = NULL;
