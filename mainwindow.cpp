@@ -975,7 +975,7 @@ void MainWindow::drawTx(const QVector<double> adF, const QVector<double> adI)
 
 void MainWindow::initQwtPlotRx()
 {
-    ui->qwtPlotRx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
+//    ui->qwtPlotRx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
     QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
@@ -1177,7 +1177,7 @@ void MainWindow::initQwtPlotRho()
 
     ui->qwtPlotRho->plotLayout()->setAlignCanvasToScales( true );
 
-    ui->qwtPlotRho->setFooter(("-------"));
+    //ui->qwtPlotRho->setFooter(("-------"));
 
     ui->qwtPlotRho->setAutoReplot(true);
 }
@@ -1429,12 +1429,13 @@ void MainWindow::LastDirWrite(QString oStrFileName)
     oFileLastDir.close();
 }
 
+/* 发射电流曲线 */
 void MainWindow::initQwtPlotTx()
 {
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
     QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
 
-    ui->qwtPlotTx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
+//    ui->qwtPlotTx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     ui->qwtPlotTx->setFont(oFont);
 

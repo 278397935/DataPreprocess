@@ -67,6 +67,8 @@ void RX::importRX(QString oStrFileName)
         while(!oStream.atEnd())
         {
             oStrLineCSV.clear();
+
+            /* 首行为配置信息 */
             oStrLineCSV = oStream.readLine();
 
             if(!oStrLineCSV.isEmpty())
@@ -77,6 +79,7 @@ void RX::importRX(QString oStrFileName)
 
                 adF.append(aoStrLineCSV.first().toDouble());
 
+                /* 读取到了频率之后，在QStringList中删除掉 */
                 aoStrLineCSV.removeFirst();
 
                 QVector<double> adData;
@@ -103,6 +106,7 @@ void RX::importRX(QString oStrFileName)
     oFile.close();
 }
 
+/* 刷新散点图，同时，平均值和相对均方误差也应该对应刷新。 */
 void RX::renewScatter(int iIndex)
 {
     /*  */
@@ -157,6 +161,7 @@ void RX::renewScatter(int iIndex)
     oFile.close();
 }
 
+/* 计算场值平均值 */
 double RX::getE(QVector<double> adData)
 {
     double dAverage = 0;
@@ -175,6 +180,7 @@ double RX::getE(QVector<double> adData)
     return dAverage;
 }
 
+/* 计算相对均方误差 */
 double RX::getErr(QVector<double> adData)
 {
     double dError = 0;
@@ -195,7 +201,9 @@ double RX::getErr(QVector<double> adData)
 }
 
 /***********************************************************
- * Update scatter, next update E, update Error
+ * 1：Update Scatter,
+ * 2：Update E(Field value)
+ * 3：Update Error
  */
 void RX::updateScatter(int iIndex, QVector<double> adScatter)
 {
