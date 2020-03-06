@@ -66,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    this->setWindowTitle("Tang_广域数据预处理工具_" + QDateTime::currentDateTime().toString("yyyyMMddAP"));
+    this->setWindowTitle("Tang_广域数据预处理工具_" + QDateTime::currentDateTime().toString("yyyy年MM月dd日AP"));
 
     qDebugV0()<<QThread::currentThreadId();
 
@@ -149,6 +149,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->actionImportRX->setEnabled(false);
 
+    ui->actionExportRho->setEnabled(false);
+
+
     poDb = new MyDatabase();
     poDb->connect();
 
@@ -190,9 +193,9 @@ MainWindow::MainWindow(QWidget *parent) :
     poCalRho = new CalRhoThread(poDb);
     connect(poCalRho, SIGNAL(SigMsg(QString)), this, SLOT(showMsg(QString)));
 
-    this->initQwtPlotTx();
-    this->initQwtPlotRx();
-    this->initQwtPlotRho();
+    this->initPlotTx();
+    this->initPlotRx();
+    this->initPlotRho();
 
     connect(poCalRho, SIGNAL(SigRho(STATION, QVector<double>, QVector<double>)), this, SLOT(drawRho(STATION, QVector<double>, QVector<double>)));
 }
@@ -218,9 +221,10 @@ void MainWindow::on_actionImportTX_triggered()
         ui->actionImportRX->setEnabled(true);
     }
 
-    ui->qwtPlotTx->setFooter("电流文件："+oStrFileName);
+    ui->plotTx->setFooter("电流文件："+oStrFileName);
 }
 
+/* 打开接收端场值文件 */
 void MainWindow::on_actionImportRX_triggered()
 {
     QStringList aoStrRX = QFileDialog::getOpenFileNames(this,
@@ -234,20 +238,38 @@ void MainWindow::on_actionImportRX_triggered()
         return;
     }
 
+    QStringList aoStrExisting;
+    foreach(RX *poRxExisting, gapoRX)
+    {
+        qDebugV0()<<poRxExisting->oStrCSV;
+        aoStrExisting.append( poRxExisting->oStrCSV );
+    }
+
     foreach(QString oStrCSV, aoStrRX)
     {
-        RX *poRX = new RX(oStrCSV);
+        if( aoStrExisting.contains(oStrCSV) )
+        {
+            qDebugV0()<<"existing~~~"<<oStrCSV;
+        }
+        else
+        {
+            qDebugV0()<<"Not existing~~~"<<oStrCSV;
 
-        gapoRX.append( poRX);
+            RX *poRX = new RX(oStrCSV);
+
+            gapoRX.append(poRX);
+        }
     }
 
     this->LastDirWrite( aoStrRX.last() );
+
+    qDebugV0()<<aoStrExisting;
 
     this->drawCurve();
 
     QFileInfo oFileInfo(aoStrRX.first());
 
-    ui->qwtPlotRx->setFooter( "场值文件目录：" + oFileInfo.absolutePath() );
+    ui->plotRx->setFooter( "场值文件目录：" + oFileInfo.absolutePath() );
 }
 
 /*  Close Application */
@@ -259,7 +281,8 @@ void MainWindow::on_actionClose_triggered()
 /*  */
 void MainWindow::on_actionClear_triggered()
 {
-    QMessageBox oMsgBox(QMessageBox::Question, "清空数据", "确定清空数据?", QMessageBox::Yes | QMessageBox::No, NULL);
+    QMessageBox oMsgBox(QMessageBox::Question, "清空数据", "确定清空数据?",
+                        QMessageBox::Yes | QMessageBox::No, NULL);
 
     if(oMsgBox.exec() == QMessageBox::Yes)
     {
@@ -276,11 +299,22 @@ void MainWindow::on_actionClear_triggered()
 
         gapoRX.clear();
     }
+
+    ui->plotCurve->detachItems();
+    ui->plotScatter->detachItems();
+
+    ui->plotScatter->replot();
+    ui->plotCurve->replot();
+
+    ui->plotCurve->setFooter(“”);
 }
 
+/* 显示提示信息，QMessage自动定时关闭。 */
 void MainWindow::showMsg(QString oStrMsg)
 {
-    QMessageBox::about(this, "提示", oStrMsg);
+    QMessageBox *poMsgBox = new QMessageBox(QMessageBox::Information,tr("友情提示"),oStrMsg);
+    QTimer::singleShot(5000, poMsgBox, SLOT(accept())); //也可将accept改为close
+    poMsgBox->exec();//box->show();都可以
 }
 
 void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
@@ -298,10 +332,23 @@ void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
  */
 void MainWindow::drawCurve()
 {
+    ui->plotCurve->detachItems();
+
+    ui->plotCurve->repaint();
+
+    foreach(QwtPlotItem *poItem,  ui->plotCurve->itemList())
+    {
+        qDebugV0()<<"detach plot item:"<<poItem;
+        poItem->detach();
+    }
+
+    ui->plotCurve->setAxisAutoScale(QwtPlot::xBottom, true);
+
     QSet<double> setF;
 
     foreach(RX *poRX, gapoRX)
     {
+        qDebugV0()<<"draw curve ~~~:"<<poRX->oStrCSV;
         for(int i = 0; i < poRX->adF.count(); i++)
         {
             setF.insert(poRX->adF.at(i));
@@ -312,7 +359,7 @@ void MainWindow::drawCurve()
 
     qSort(adF);
 
-    qDebugV0()<<adF;
+    //qDebugV0()<<"F sequence:"<<adF;
 
     /* Fill ticks */
     QList<double> adTicks[QwtScaleDiv::NTickTypes];
@@ -399,6 +446,7 @@ void MainWindow::resizeScaleScatter()
     }
 }
 
+/* 电压除以电流，得到电阻值。实际上就是用电流来归一化电压 */
 QVector<double> MainWindow::getR(QVector<double> adF, QVector<double> adE)
 {
     QVector<double> adR;
@@ -928,9 +976,12 @@ void MainWindow::switchHighlightCurve()
         // poDb->refineError(gmapCurveData.value(poCurve));
     }
 }
-
+/* 绘制发射端电流曲线 */
 void MainWindow::drawTx(const QVector<double> adF, const QVector<double> adI)
 {
+    ui->plotTx->detachItems();
+    ui->plotTx->replot();
+
     QSet<double> setF;
 
     for(int i = 0; i < adF.count(); i++)
@@ -951,7 +1002,7 @@ void MainWindow::drawTx(const QVector<double> adF, const QVector<double> adI)
             adTicks[QwtScaleDiv::MajorTick].first(),
             adTicks );
 
-    ui->qwtPlotTx->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
+    ui->plotTx->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
     /* Create a curve pointer */
     QwtPlotCurve *poCurve = new QwtPlotCurve();
 
@@ -967,15 +1018,15 @@ void MainWindow::drawTx(const QVector<double> adF, const QVector<double> adI)
 
     poCurve->setSamples( adF, adI );
     poCurve->setAxes(QwtPlot::xBottom, QwtPlot::yLeft);
-    poCurve->attach(ui->qwtPlotTx);
+    poCurve->attach(ui->plotTx);
     poCurve->setVisible( true );
 
-    ui->qwtPlotTx->replot();
+    ui->plotTx->replot();
 }
 
-void MainWindow::initQwtPlotRx()
+void MainWindow::initPlotRx()
 {
-//    ui->qwtPlotRx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
+    //    ui->plotRx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
     QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
@@ -983,25 +1034,25 @@ void MainWindow::initQwtPlotRx()
     QwtText oTxtTitle( "接收端_场值曲线" );
     oTxtTitle.setFont( oFont );
 
-    ui->qwtPlotRx->setTitle(oTxtTitle);
+    ui->plotRx->setTitle(oTxtTitle);
 
-    ui->qwtPlotRx->setFont(oFont);
+    ui->plotRx->setFont(oFont);
 
     /* Nice blue */
     //ui->plotCurve->setCanvasBackground(QColor(55, 100, 141));
 
     /* Set Log Scale */
-    ui->qwtPlotRx->setAxisScaleEngine( QwtPlot::xBottom, new QwtLogScaleEngine() );
-    ui->qwtPlotRx->setAxisScaleEngine( QwtPlot::yLeft,   new QwtLogScaleEngine() );
+    ui->plotRx->setAxisScaleEngine( QwtPlot::xBottom, new QwtLogScaleEngine() );
+    ui->plotRx->setAxisScaleEngine( QwtPlot::yLeft,   new QwtLogScaleEngine() );
 
-    ui->qwtPlotRx->enableAxis(QwtPlot::xBottom , true);
-    ui->qwtPlotRx->enableAxis(QwtPlot::yLeft   , true);
+    ui->plotRx->enableAxis(QwtPlot::xBottom , true);
+    ui->plotRx->enableAxis(QwtPlot::yLeft   , true);
 
     QwtScaleDraw *poScaleDraw  = new QwtScaleDraw();
     poScaleDraw->setLabelRotation( -26 );
     poScaleDraw->setLabelAlignment( Qt::AlignLeft | Qt::AlignVCenter );
 
-    ui->qwtPlotRx->setAxisScaleDraw(QwtPlot::xBottom, poScaleDraw);
+    ui->plotRx->setAxisScaleDraw(QwtPlot::xBottom, poScaleDraw);
 
     /* Set Axis title */
     QwtText oTxtXAxisTitle( "F/Hz" );
@@ -1009,41 +1060,44 @@ void MainWindow::initQwtPlotRx()
     oTxtXAxisTitle.setFont( oFont );
     oTxtYAxisTitle.setFont( oFont );
 
-    ui->qwtPlotRx->setAxisTitle(QwtPlot::xBottom,  oTxtXAxisTitle);
-    ui->qwtPlotRx->setAxisTitle(QwtPlot::yLeft,    oTxtYAxisTitle);
+    ui->plotRx->setAxisTitle(QwtPlot::xBottom,  oTxtXAxisTitle);
+    ui->plotRx->setAxisTitle(QwtPlot::yLeft,    oTxtYAxisTitle);
 
     /* Draw the canvas grid */
     QwtPlotGrid *poGrid = new QwtPlotGrid();
     poGrid->enableX( false );
     poGrid->enableY( true );
     poGrid->setMajorPen( Qt::gray, 0.5, Qt::DotLine );
-    poGrid->attach( ui->qwtPlotRx );
+    poGrid->attach( ui->plotRx );
 
-    ui->qwtPlotRx->setAutoDelete ( true );
+    ui->plotRx->setAutoDelete ( true );
 
     /* Remove the gap between the data axes */
-    for ( int i = 0; i < ui->qwtPlotRx->axisCnt; i++ )
+    for ( int i = 0; i < ui->plotRx->axisCnt; i++ )
     {
-        QwtScaleWidget *poScaleWidget = ui->qwtPlotRx->axisWidget( i);
+        QwtScaleWidget *poScaleWidget = ui->plotRx->axisWidget( i);
         if (poScaleWidget)
         {
             poScaleWidget->setMargin( 0 );
         }
 
-        QwtScaleDraw *poScaleDraw = ui->qwtPlotRx->axisScaleDraw( i );
+        QwtScaleDraw *poScaleDraw = ui->plotRx->axisScaleDraw( i );
         if ( poScaleDraw )
         {
             poScaleDraw->enableComponent( QwtAbstractScaleDraw::Backbone, false );
         }
     }
 
-    ui->qwtPlotRx->plotLayout()->setAlignCanvasToScales( true );
+    ui->plotRx->plotLayout()->setAlignCanvasToScales( true );
 
-    ui->qwtPlotRx->setAutoReplot(true);
+    ui->plotRx->setAutoReplot(true);
 }
 
 void MainWindow::drawRx()
 {
+    ui->plotRx->detachItems();
+    ui->plotRx->replot();
+
     QSet<double> setF;
 
     foreach(RX *poRX, gapoRX)
@@ -1067,7 +1121,7 @@ void MainWindow::drawRx()
             adTicks[QwtScaleDiv::MajorTick].first(),
             adTicks );
 
-    ui->qwtPlotRx->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
+    ui->plotRx->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
 
     foreach (RX* poRX, gapoRX)
     {
@@ -1096,24 +1150,24 @@ void MainWindow::drawRx()
 
         poCurve->setSamples( poRX->adF, adR );
         poCurve->setAxes(QwtPlot::xBottom, QwtPlot::yLeft);
-        poCurve->attach(ui->qwtPlotRx);
+        poCurve->attach(ui->plotRx);
         poCurve->setVisible( true );
     }
 
-    QwtPlotMagnifier *poM = new QwtPlotMagnifier(ui->qwtPlotRx->canvas());
+    QwtPlotMagnifier *poM = new QwtPlotMagnifier(ui->plotRx->canvas());
     poM->setAxisEnabled(QwtPlot::xBottom, false);
     poM->setAxisEnabled(QwtPlot::yLeft, true);
     poM->setAxisEnabled(QwtPlot::yRight, true);
 
-    QwtPlotPanner *poP = new QwtPlotPanner(ui->qwtPlotRx->canvas());
+    QwtPlotPanner *poP = new QwtPlotPanner(ui->plotRx->canvas());
     poP->setMouseButton(Qt::LeftButton);
 
-    ui->qwtPlotRx->replot();
+    ui->plotRx->replot();
 }
 
-void MainWindow::initQwtPlotRho()
+void MainWindow::initPlotRho()
 {
-    ui->qwtPlotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
+    ui->plotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
     QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
@@ -1121,25 +1175,25 @@ void MainWindow::initQwtPlotRho()
     QwtText oTxtTitle( "广域视电阻率曲线" );
     oTxtTitle.setFont( oFont );
 
-    ui->qwtPlotRho->setTitle(oTxtTitle);
+    ui->plotRho->setTitle(oTxtTitle);
 
-    ui->qwtPlotRho->setFont(oFont);
+    ui->plotRho->setFont(oFont);
 
     /* Nice blue */
     //ui->plotCurve->setCanvasBackground(QColor(55, 100, 141));
 
     /* Set Log Scale */
-    ui->qwtPlotRho->setAxisScaleEngine( QwtPlot::xBottom, new QwtLogScaleEngine() );
-    ui->qwtPlotRho->setAxisScaleEngine( QwtPlot::yLeft,   new QwtLogScaleEngine() );
+    ui->plotRho->setAxisScaleEngine( QwtPlot::xBottom, new QwtLogScaleEngine() );
+    ui->plotRho->setAxisScaleEngine( QwtPlot::yLeft,   new QwtLogScaleEngine() );
 
-    ui->qwtPlotRho->enableAxis(QwtPlot::xBottom , true);
-    ui->qwtPlotRho->enableAxis(QwtPlot::yLeft   , true);
+    ui->plotRho->enableAxis(QwtPlot::xBottom , true);
+    ui->plotRho->enableAxis(QwtPlot::yLeft   , true);
 
     QwtScaleDraw *poScaleDraw  = new QwtScaleDraw();
     poScaleDraw->setLabelRotation( -26 );
     poScaleDraw->setLabelAlignment( Qt::AlignLeft | Qt::AlignVCenter );
 
-    ui->qwtPlotRho->setAxisScaleDraw(QwtPlot::xBottom, poScaleDraw);
+    ui->plotRho->setAxisScaleDraw(QwtPlot::xBottom, poScaleDraw);
 
     /* Set Axis title */
     QwtText oTxtXAxisTitle( "F/Hz" );
@@ -1147,39 +1201,39 @@ void MainWindow::initQwtPlotRho()
     oTxtXAxisTitle.setFont( oFont );
     oTxtYAxisTitle.setFont( oFont );
 
-    ui->qwtPlotRho->setAxisTitle(QwtPlot::xBottom,  oTxtXAxisTitle);
-    ui->qwtPlotRho->setAxisTitle(QwtPlot::yLeft,    oTxtYAxisTitle);
+    ui->plotRho->setAxisTitle(QwtPlot::xBottom,  oTxtXAxisTitle);
+    ui->plotRho->setAxisTitle(QwtPlot::yLeft,    oTxtYAxisTitle);
 
     /* Draw the canvas grid */
     QwtPlotGrid *poGrid = new QwtPlotGrid();
     poGrid->enableX( false );
     poGrid->enableY( true );
     poGrid->setMajorPen( Qt::gray, 0.5, Qt::DotLine );
-    poGrid->attach( ui->qwtPlotRho );
+    poGrid->attach( ui->plotRho );
 
-    ui->qwtPlotRho->setAutoDelete ( true );
+    ui->plotRho->setAutoDelete ( true );
 
     /* Remove the gap between the data axes */
-    for ( int i = 0; i < ui->qwtPlotRho->axisCnt; i++ )
+    for ( int i = 0; i < ui->plotRho->axisCnt; i++ )
     {
-        QwtScaleWidget *poScaleWidget = ui->qwtPlotRho->axisWidget( i);
+        QwtScaleWidget *poScaleWidget = ui->plotRho->axisWidget( i);
         if (poScaleWidget)
         {
             poScaleWidget->setMargin( 0 );
         }
 
-        QwtScaleDraw *poScaleDraw = ui->qwtPlotRho->axisScaleDraw( i );
+        QwtScaleDraw *poScaleDraw = ui->plotRho->axisScaleDraw( i );
         if ( poScaleDraw )
         {
             poScaleDraw->enableComponent( QwtAbstractScaleDraw::Backbone, false );
         }
     }
 
-    ui->qwtPlotRho->plotLayout()->setAlignCanvasToScales( true );
+    ui->plotRho->plotLayout()->setAlignCanvasToScales( true );
 
-    //ui->qwtPlotRho->setFooter(("-------"));
+    //ui->plotRho->setFooter(("-------"));
 
-    ui->qwtPlotRho->setAutoReplot(true);
+    ui->plotRho->setAutoReplot(true);
 }
 
 /*****************************************************************************
@@ -1430,35 +1484,35 @@ void MainWindow::LastDirWrite(QString oStrFileName)
 }
 
 /* 发射电流曲线 */
-void MainWindow::initQwtPlotTx()
+void MainWindow::initPlotTx()
 {
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
     QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
 
-//    ui->qwtPlotTx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
+    //    ui->plotTx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
-    ui->qwtPlotTx->setFont(oFont);
+    ui->plotTx->setFont(oFont);
 
     QwtText oTxtTitle( "发射端_电流曲线" );
     oTxtTitle.setFont( oFont );
 
-    ui->qwtPlotTx->setTitle(oTxtTitle);
+    ui->plotTx->setTitle(oTxtTitle);
 
     /* Nice blue */
     //ui->plotCurve->setCanvasBackground(QColor(55, 100, 141));
 
     /* Set Log Scale */
-    ui->qwtPlotTx->setAxisScaleEngine( QwtPlot::xBottom, new QwtLogScaleEngine() );
-    ui->qwtPlotTx->setAxisScaleEngine( QwtPlot::yLeft,   new QwtLogScaleEngine() );
+    ui->plotTx->setAxisScaleEngine( QwtPlot::xBottom, new QwtLogScaleEngine() );
+    ui->plotTx->setAxisScaleEngine( QwtPlot::yLeft,   new QwtLogScaleEngine() );
 
-    ui->qwtPlotTx->enableAxis(QwtPlot::xBottom , true);
-    ui->qwtPlotTx->enableAxis(QwtPlot::yLeft   , true);
+    ui->plotTx->enableAxis(QwtPlot::xBottom , true);
+    ui->plotTx->enableAxis(QwtPlot::yLeft   , true);
 
     QwtScaleDraw *poScaleDraw  = new QwtScaleDraw();
     poScaleDraw->setLabelRotation( -26 );
     poScaleDraw->setLabelAlignment( Qt::AlignLeft | Qt::AlignVCenter );
 
-    ui->qwtPlotTx->setAxisScaleDraw(QwtPlot::xBottom, poScaleDraw);
+    ui->plotTx->setAxisScaleDraw(QwtPlot::xBottom, poScaleDraw);
 
     /* Set Axis title */
     QwtText oTxtXAxisTitle( "F/Hz" );
@@ -1466,40 +1520,41 @@ void MainWindow::initQwtPlotTx()
     oTxtXAxisTitle.setFont( oFont );
     oTxtYAxisTitle.setFont( oFont );
 
-    ui->qwtPlotTx->setAxisTitle(QwtPlot::xBottom,  oTxtXAxisTitle);
-    ui->qwtPlotTx->setAxisTitle(QwtPlot::yLeft,    oTxtYAxisTitle);
+    ui->plotTx->setAxisTitle(QwtPlot::xBottom,  oTxtXAxisTitle);
+    ui->plotTx->setAxisTitle(QwtPlot::yLeft,    oTxtYAxisTitle);
 
     /* Draw the canvas grid */
     QwtPlotGrid *poGrid = new QwtPlotGrid();
     poGrid->enableX( false );
     poGrid->enableY( true );
     poGrid->setMajorPen( Qt::gray, 0.5, Qt::DotLine );
-    poGrid->attach( ui->qwtPlotTx );
+    poGrid->attach( ui->plotTx );
 
-    ui->qwtPlotTx->setAutoDelete ( true );
+    ui->plotTx->setAutoDelete ( true );
 
     /* Remove the gap between the data axes */
-    for ( int i = 0; i < ui->qwtPlotTx->axisCnt; i++ )
+    for ( int i = 0; i < ui->plotTx->axisCnt; i++ )
     {
-        QwtScaleWidget *poScaleWidget = ui->qwtPlotTx->axisWidget( i);
+        QwtScaleWidget *poScaleWidget = ui->plotTx->axisWidget( i);
         if (poScaleWidget)
         {
             poScaleWidget->setMargin( 0 );
         }
 
-        QwtScaleDraw *poScaleDraw = ui->qwtPlotTx->axisScaleDraw( i );
+        QwtScaleDraw *poScaleDraw = ui->plotTx->axisScaleDraw( i );
         if ( poScaleDraw )
         {
             poScaleDraw->enableComponent( QwtAbstractScaleDraw::Backbone, false );
         }
     }
 
-    ui->qwtPlotTx->plotLayout()->setAlignCanvasToScales( true );
+    ui->plotTx->plotLayout()->setAlignCanvasToScales( true );
 
-    ui->qwtPlotTx->setAutoReplot(true);
+    ui->plotTx->setAutoReplot(true);
 }
 
-void MainWindow::on_actionExportRX_triggered()
+/* 导出广域视电阻率计算结果到csv文档。 */
+void MainWindow::on_actionExportRho_triggered()
 {
     QString oStrDefault = QDateTime::currentDateTime().toString("yyyy年MM月dd日HH时mm分ss秒_广域视电阻率结果");
 
@@ -1518,6 +1573,7 @@ void MainWindow::on_actionExportRX_triggered()
 
     QAbstractItemModel *poModel = ui->tableViewRho->model();
 
+    /* 列头 */
     for(int i = 0; i < poModel->columnCount(); i++)
     {
         outStream<<poModel->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()<<",";
@@ -1623,7 +1679,7 @@ void MainWindow::on_actionCalRho_triggered()
     ui->actionCutterH->setEnabled(false);
     ui->actionCutterH->setEnabled(false);
     ui->actionCutterV->setEnabled(false);
-    //    ui->actionExportRX->setEnabled(false);
+    ui->actionExportRho->setEnabled(true);
     ui->actionImportRX->setEnabled(false);
     ui->actionImportTX->setEnabled(false);
     ui->actionRecovery->setEnabled(false);
@@ -1680,6 +1736,9 @@ void MainWindow::showTableRho(QSqlTableModel *poModel)
 
 void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> adRho)
 {
+    ui->plotRho->detachItems();
+    ui->plotRho->replot();
+
     QSet<double> setF;
 
     foreach(double dF, adF)
@@ -1699,18 +1758,18 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
     QwtScaleDiv oScaleDiv( adTicks[QwtScaleDiv::MajorTick].last(), adTicks[QwtScaleDiv::MajorTick].first(), adTicks );
 
     //QwtScaleDiv (double lowerBound, double upperBound, QList< double >[NTickTypes])
-    qDebugV0()<<ui->qwtPlotRho->axisScaleDiv(QwtPlot::xBottom).lowerBound()
+    qDebugV0()<<ui->plotRho->axisScaleDiv(QwtPlot::xBottom).lowerBound()
              <<adTicks[QwtScaleDiv::MajorTick].last()
-            <<ui->qwtPlotRho->axisScaleDiv(QwtPlot::xBottom).upperBound()
+            <<ui->plotRho->axisScaleDiv(QwtPlot::xBottom).upperBound()
            <<adTicks[QwtScaleDiv::MajorTick].first();
 
-    if( ui->qwtPlotRho->axisScaleDiv(QwtPlot::xBottom).lowerBound() == adTicks[QwtScaleDiv::MajorTick].last() ||
-            ui->qwtPlotRho->axisScaleDiv(QwtPlot::xBottom).upperBound() == adTicks[QwtScaleDiv::MajorTick].first() )
+    if( ui->plotRho->axisScaleDiv(QwtPlot::xBottom).lowerBound() == adTicks[QwtScaleDiv::MajorTick].last() ||
+            ui->plotRho->axisScaleDiv(QwtPlot::xBottom).upperBound() == adTicks[QwtScaleDiv::MajorTick].first() )
     {
         qDebugV0()<<"==";
     }
     {
-        ui->qwtPlotRho->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
+        ui->plotRho->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
     }
 
 
@@ -1737,8 +1796,8 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
 
     poCurve->setSamples( adF, adRho );
     poCurve->setAxes(QwtPlot::xBottom, QwtPlot::yLeft);
-    poCurve->attach(ui->qwtPlotRho);
+    poCurve->attach(ui->plotRho);
     poCurve->setVisible( true );
 
-    ui->qwtPlotRho->replot();
+    ui->plotRho->replot();
 }

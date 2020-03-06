@@ -37,7 +37,7 @@ void MyDatabase::connect()
     }
 }
 
-
+/* 导入电流文件 */
 void MyDatabase::importTX(QString oStrFileName)
 {
     QFile oFile(oStrFileName);
@@ -57,6 +57,7 @@ void MyDatabase::importTX(QString oStrFileName)
     QSqlQuery oQuery(*poDb);
     poDb->transaction();
 
+    /* 在写之前，就将原来的数据清除掉。 */
     if(!oQuery.exec("DELETE FROM TX"))
     {
         qDebugV5()<<oQuery.lastError().text();
@@ -87,6 +88,7 @@ void MyDatabase::importTX(QString oStrFileName)
 
     poDb->commit();
 
+    /* 更新model */
     QSqlTableModel *poModel = new QSqlTableModel(this, *poDb);
     poModel->setTable("TX");
     poModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -98,6 +100,7 @@ void MyDatabase::importTX(QString oStrFileName)
     emit SigModelTX(poModel);
 }
 
+/* 将接收端场值写入到数据库中 */
 void MyDatabase::importRX(QVector<RX*> apoRX)
 {
     QSqlQuery oQuery(*poDb);
@@ -303,7 +306,6 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
     emit SigModelRho(poModel);
 }
 
-
 QVector<double> MyDatabase::getF(STATION oStation)
 {
     QSqlQuery oQuery(*poDb);
@@ -333,10 +335,13 @@ QVector<double> MyDatabase::getF(STATION oStation)
     return adF;
 }
 
+/* 获取对应频点的电流值 */
 double MyDatabase::getI(double dF)
 {
     QSqlQuery oQuery(*poDb);
-    double dI = 0;
+
+    /* Default = 1， 电流要用来做除数，所以不能为0。 2020年03月06日 */
+    double dI = 1;
 
     if( !oQuery.exec(QString("SELECT I FROM TX WHERE F = %1")
                      .arg(dF)) )
@@ -347,6 +352,11 @@ double MyDatabase::getI(double dF)
     {
         dI = oQuery.value("I").toDouble();
     }
+    else
+    {
+        emit SigMsg(QString("未找到频点%1Hz的电流值！/n请确认。").arg(dF));
+    }
+
     return dI;
 }
 

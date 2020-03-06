@@ -104,7 +104,7 @@
         <item row="0" column="0">
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>1</number>
+           <number>4</number>
           </property>
           <widget class="QWidget" name="tabTX">
            <attribute name="title">
@@ -124,7 +124,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QwtPlot" name="qwtPlotTx"/>
+               <widget class="QwtPlot" name="plotTx"/>
               </item>
              </layout>
             </item>
@@ -148,7 +148,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QwtPlot" name="qwtPlotRx"/>
+               <widget class="QwtPlot" name="plotRx"/>
               </item>
              </layout>
             </item>
@@ -180,7 +180,7 @@
            </attribute>
            <layout class="QGridLayout" name="gridLayout_8">
             <item row="0" column="0">
-             <widget class="QwtPlot" name="qwtPlotRho"/>
+             <widget class="QwtPlot" name="plotRho"/>
             </item>
            </layout>
           </widget>
@@ -198,7 +198,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>22</height>
+     <height>17</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -207,7 +207,7 @@
     </property>
     <addaction name="actionImportTX"/>
     <addaction name="actionImportRX"/>
-    <addaction name="actionExportRX"/>
+    <addaction name="actionExportRho"/>
    </widget>
    <widget class="QMenu" name="menuCutter">
     <property name="title">
@@ -242,7 +242,7 @@
    <addaction name="separator"/>
    <addaction name="actionCalRho"/>
    <addaction name="separator"/>
-   <addaction name="actionExportRX"/>
+   <addaction name="actionExportRho"/>
    <addaction name="separator"/>
    <addaction name="actionClose"/>
   </widget>
@@ -315,16 +315,16 @@
     <string>清除数据</string>
    </property>
   </action>
-  <action name="actionExportRX">
+  <action name="actionExportRho">
    <property name="icon">
     <iconset resource="Res/Icon.qrc">
      <normaloff>:/GDC2/Icon/Export.ico</normaloff>:/GDC2/Icon/Export.ico</iconset>
    </property>
    <property name="text">
-    <string>导出RX</string>
+    <string>导出Rho</string>
    </property>
    <property name="toolTip">
-    <string>导出RX</string>
+    <string>导出Rho</string>
    </property>
   </action>
   <action name="actionImportRX">

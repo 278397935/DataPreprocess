@@ -54,10 +54,16 @@ public:
 
     void connect();
 
+    /* 将发射端电流值写入到数据库中 */
     void importTX(QString oStrFileName);
+
+    /* 将接收端场值写入到数据库中 */
     void importRX(QVector<RX *> apoRX);
+
+    /* 将AB和测点坐标写入到数据库中 */
     void importXY(QString oStrFileName);
 
+    /* 将计算得到的广域视电阻率与相关条件信息一并写入到数据库中 */
     void importRho( QList<RhoResult> aoRhoResult);
 
     QVector<double> getF(STATION oStation);
@@ -78,7 +84,9 @@ signals:
     void SigMsg(QString);
 
     void SigModelTX(QSqlTableModel *);
+
     void SigModelRX(QSqlTableModel *);
+
     void SigModelXY(QSqlTableModel *);
 
     void SigModelRho(QSqlTableModel *);

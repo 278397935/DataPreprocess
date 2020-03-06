@@ -53,6 +53,8 @@ public:
 
     CalRhoThread *poCalRho;
 
+    QStringList gaoRx;
+
     QVector<RX*> gapoRX;
 
     /* Curve canvas picker object pointer */
@@ -113,20 +115,20 @@ private:
     /* Save the current project Dir as the most recently opened directory */
     void LastDirWrite(QString oStrFileName);
 
-    void initQwtPlotTx();
+    void initPlotTx();
 
-    void drawTx(  const QVector< double > adF,  const QVector< double > adI );
+    void drawTx( const QVector< double > adF,  const QVector< double > adI );
 
-    void initQwtPlotRx();
+    void initPlotRx();
 
     void drawRx();
 
-    void initQwtPlotRho();
+    void initPlotRho();
 
 private slots:
     void on_actionImportTX_triggered();
     void on_actionImportRX_triggered();
-    void on_actionExportRX_triggered();
+    void on_actionExportRho_triggered();
 
     void on_actionClose_triggered();
     void on_actionClear_triggered();

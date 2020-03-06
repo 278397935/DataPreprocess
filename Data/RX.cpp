@@ -8,7 +8,7 @@ RX::RX(QString oStrFileName, QObject *parent):QObject(parent)
     this->importRX(oStrFileName);
 }
 
-/* Import csv file FFT_SEC_V_S988_D133_CH1.csv */
+/* Import csv file */
 void RX::importRX(QString oStrFileName)
 {
     QFileInfo oFileInfo(oStrFileName);
@@ -23,6 +23,7 @@ void RX::importRX(QString oStrFileName)
 
     //qDebugV0()<<oStrTemp;
 
+    /* 读取文件名里面的信息，摘取线号点号仪器号通道号~ */
     QStringList aoStrStationInfo = oStrTemp.split('_', QString::SkipEmptyParts );
 
     //qDebugV0()<<aoStrStationInfo;
@@ -49,7 +50,7 @@ void RX::importRX(QString oStrFileName)
     QString oStrCompTag= aoStrStationInfo.at(4);
     goStrCompTag = oStrCompTag;
 
-    /*  */
+    /* 读文件内容，场值 */
     QFile oFile(oStrFileName);
     QString oStrLineCSV;
     oStrLineCSV.clear();
@@ -68,7 +69,7 @@ void RX::importRX(QString oStrFileName)
         {
             oStrLineCSV.clear();
 
-            /* 首行为配置信息 */
+            /*  */
             oStrLineCSV = oStream.readLine();
 
             if(!oStrLineCSV.isEmpty())
