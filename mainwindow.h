@@ -131,6 +131,7 @@ private slots:
     void on_actionExportRho_triggered();
 
     void on_actionClose_triggered();
+
     void on_actionClear_triggered();
 
     /* Read data from RX, update Scatter\Error\Curve */

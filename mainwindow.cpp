@@ -99,6 +99,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     poMarkerPicker = NULL;
 
+    poCurvePicker = NULL;
+
+    poDb = NULL;
+
     /* Init poCurvePicker */
     poCurvePicker = new CanvasPicker( ui->plotCurve );
     connect(poCurvePicker, SIGNAL(SigSelected(QwtPlotCurve*,int)), this, SLOT(Selected(QwtPlotCurve*,int)));
@@ -227,12 +231,12 @@ void MainWindow::on_actionImportTX_triggered()
 /* 打开接收端场值文件 */
 void MainWindow::on_actionImportRX_triggered()
 {
-    QStringList aoStrRX = QFileDialog::getOpenFileNames(this,
-                                                        "打开电场文件",
-                                                        QString("%1").arg(this->LastDirRead()),
-                                                        "电场文件(FFT_SEC_V_T*.csv)");
+    QStringList aoStrRxThisTime = QFileDialog::getOpenFileNames(this,
+                                                                "打开电场文件",
+                                                                QString("%1").arg(this->LastDirRead()),
+                                                                "电场文件(FFT_SEC_V_T*.csv)");
 
-    if(aoStrRX.isEmpty())
+    if(aoStrRxThisTime.isEmpty())
     {
         QMessageBox::warning(this, "警告","未选中有效文件，\n请重新选择！");
         return;
@@ -245,29 +249,29 @@ void MainWindow::on_actionImportRX_triggered()
         aoStrExisting.append( poRxExisting->oStrCSV );
     }
 
-    foreach(QString oStrCSV, aoStrRX)
+    foreach(QString oStrRxThisTime, aoStrRxThisTime)
     {
-        if( aoStrExisting.contains(oStrCSV) )
+        if( aoStrExisting.contains(oStrRxThisTime) )
         {
-            qDebugV0()<<"existing~~~"<<oStrCSV;
+            qDebugV0()<<"existing~~~"<<oStrRxThisTime;
         }
         else
         {
-            qDebugV0()<<"Not existing~~~"<<oStrCSV;
+            qDebugV0()<<"Not existing~~~"<<oStrRxThisTime;
 
-            RX *poRX = new RX(oStrCSV);
+            RX *poRX = new RX(oStrRxThisTime);
 
             gapoRX.append(poRX);
         }
     }
 
-    this->LastDirWrite( aoStrRX.last() );
+    this->LastDirWrite( aoStrRxThisTime.last() );
 
     qDebugV0()<<aoStrExisting;
 
     this->drawCurve();
 
-    QFileInfo oFileInfo(aoStrRX.first());
+    QFileInfo oFileInfo(aoStrRxThisTime.last());
 
     ui->plotRx->setFooter( "场值文件目录：" + oFileInfo.absolutePath() );
 }
@@ -288,6 +292,17 @@ void MainWindow::on_actionClear_triggered()
     {
         ui->stackedWidget->setCurrentIndex(0);
 
+        /* 电压除以电流的图，褫干净 */
+        foreach (QwtPlotCurve *poCurve, gmapCurveData.keys())
+        {
+            if(poCurve != NULL)
+            {
+                delete poCurve;
+                poCurve == NULL;
+            }
+        }
+        gmapCurveData.clear();
+
         foreach(RX *oRx, gapoRX)
         {
             if(oRx != NULL)
@@ -298,15 +313,52 @@ void MainWindow::on_actionClear_triggered()
         }
 
         gapoRX.clear();
+
+        ui->plotCurve->detachItems();
+
+        ui->plotCurve->repaint();
+
+        /* 散点图，褫干净 */
+        /* Clean up the Copy items, Before creating new scatter, Even without. */
+        if( gpoScatter != NULL )
+        {
+            gpoScatter->detach();
+            delete gpoScatter;
+            gpoScatter = NULL;
+        }
+
+        /* New marker picker pointer */
+        if(poMarkerPicker != NULL)
+        {
+            disconnect( poMarkerPicker, SIGNAL(SigMarkerMoved()), this , SLOT(markerMoved()));
+            delete poMarkerPicker;
+            poMarkerPicker = NULL;
+        }
+
+        ui->plotScatter->replot();
+
+        /* 右手边，tableWidget 褫干净 */
+        foreach (QTreeWidgetItem *poItem, gmapCurveItem.values())
+        {
+            if(poItem != NULL)
+            {
+                disconnect(ui->treeWidgetLegend, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(shiftCurveSelect(QTreeWidgetItem*,int)));
+                delete poItem;
+                poItem == NULL;
+            }
+        }
+        gmapCurveItem.clear();
+
+        ui->treeWidgetLegend->clear();
+
+        ui->plotCurve->setFooter("");
+
+        if( !ui->plotScatter->isHidden())
+        {
+            ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterShow.png"));
+            ui->plotScatter->hide();
+        }
     }
-
-    ui->plotCurve->detachItems();
-    ui->plotScatter->detachItems();
-
-    ui->plotScatter->replot();
-    ui->plotCurve->replot();
-
-    ui->plotCurve->setFooter(“”);
 }
 
 /* 显示提示信息，QMessage自动定时关闭。 */
@@ -332,23 +384,35 @@ void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
  */
 void MainWindow::drawCurve()
 {
+    foreach (QwtPlotCurve *poCurve, gmapCurveData.keys())
+    {
+        delete poCurve;
+        poCurve == NULL;
+    }
+
+    gmapCurveData.clear();
+
+    foreach (QTreeWidgetItem *poItem, gmapCurveItem.values())
+    {
+        if(poItem != NULL)
+        {
+            delete poItem;
+            poItem == NULL;
+        }
+    }
+    gmapCurveItem.clear();
+
     ui->plotCurve->detachItems();
 
     ui->plotCurve->repaint();
 
-    foreach(QwtPlotItem *poItem,  ui->plotCurve->itemList())
-    {
-        qDebugV0()<<"detach plot item:"<<poItem;
-        poItem->detach();
-    }
-
-    ui->plotCurve->setAxisAutoScale(QwtPlot::xBottom, true);
+    disconnect(ui->treeWidgetLegend, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(shiftCurveSelect(QTreeWidgetItem*,int)));
+    ui->treeWidgetLegend->clear();
 
     QSet<double> setF;
 
     foreach(RX *poRX, gapoRX)
     {
-        qDebugV0()<<"draw curve ~~~:"<<poRX->oStrCSV;
         for(int i = 0; i < poRX->adF.count(); i++)
         {
             setF.insert(poRX->adF.at(i));
@@ -381,7 +445,8 @@ void MainWindow::drawCurve()
                                  .arg(poRX->goStrCompTag) );
 
         /* Create a curve pointer */
-        QwtPlotCurve *poCurve = new QwtPlotCurve( oTxtTitle );
+        QwtPlotCurve *poCurve = NULL;
+        poCurve = new QwtPlotCurve( oTxtTitle );
 
         poCurve->setPen( Qt::black, 2, Qt::SolidLine );
         poCurve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
@@ -402,7 +467,8 @@ void MainWindow::drawCurve()
 
         gmapCurveData.insert(poCurve, poRX);
 
-        QTreeWidgetItem *poItem = new QTreeWidgetItem(ui->treeWidgetLegend, QStringList({poCurve->title().text(),"",""}));
+        QTreeWidgetItem *poItem = NULL;
+        poItem = new QTreeWidgetItem(ui->treeWidgetLegend, QStringList({poCurve->title().text(),"",""}));
 
         poItem->setData(1, Qt::CheckStateRole, Qt::Checked);
         poItem->setData(2, Qt::CheckStateRole, Qt::Unchecked);
@@ -411,14 +477,6 @@ void MainWindow::drawCurve()
     }
 
     connect(ui->treeWidgetLegend, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(shiftCurveSelect(QTreeWidgetItem*,int)));
-
-    QwtPlotMagnifier *poM = new QwtPlotMagnifier(ui->plotCurve->canvas());
-    poM->setAxisEnabled(QwtPlot::xBottom, false);
-    poM->setAxisEnabled(QwtPlot::yLeft, true);
-    poM->setAxisEnabled(QwtPlot::yRight, true);
-
-    QwtPlotPanner *poP = new QwtPlotPanner(ui->plotCurve->canvas());
-    poP->setMouseButton(Qt::LeftButton);
 
     ui->plotCurve->replot();
 }
@@ -597,6 +655,16 @@ void MainWindow::initPlotCurve()
     //ui->treeWidgetLegend->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     connect(ui->treeWidgetLegend->header(), SIGNAL(sectionDoubleClicked(int)), this, SLOT(shiftAllCurve(int)));
+
+    /* 放大镜 */
+    QwtPlotMagnifier *poMagnifier = new QwtPlotMagnifier(ui->plotCurve->canvas());
+    poMagnifier->setAxisEnabled(QwtPlot::xBottom, false);
+    poMagnifier->setAxisEnabled(QwtPlot::yLeft, true);
+    poMagnifier->setAxisEnabled(QwtPlot::yRight, true);
+
+    /* 平移 */
+    QwtPlotPanner *poPanner = new QwtPlotPanner(ui->plotCurve->canvas());
+    poPanner->setMouseButton(Qt::LeftButton);
 }
 
 /********************************************************************************
@@ -609,6 +677,9 @@ void MainWindow::initPlotScatter()
     ui->plotScatter->enableAxis(QwtPlot::xBottom, true);
     ui->plotScatter->enableAxis(QwtPlot::yLeft,   true);
     ui->plotScatter->setAutoDelete ( true );
+
+
+
     ui->plotScatter->replot();
 }
 
@@ -837,14 +908,6 @@ void MainWindow::markerMoved()
  */
 void MainWindow::drawScatter()
 {
-    /* Clean up the Copy items, Before creating new scatter, Even without. */
-    if( gpoScatter != NULL )
-    {
-        gpoScatter->detach();
-        delete gpoScatter;
-        gpoScatter = NULL;
-    }
-
     /* Detach & Delete marker line pointer, plotCurve's curves,set NULL textLabel. */
     if( gpoSelectedCurve == NULL || giSelectedIndex == -1  )
     {
@@ -855,15 +918,18 @@ void MainWindow::drawScatter()
     /* Selected some curve, restore that curve. */
     const QwtPlotItemList& itmList = ui->plotScatter->itemList();
 
-    for ( QwtPlotItemIterator it = itmList.begin(); it != itmList.end(); ++it )
+    for( QwtPlotItemIterator it = itmList.begin(); it != itmList.end(); ++it )
     {
         if ( ( *it )->rtti() == QwtPlotItem::Rtti_PlotTextLabel )
         {
             QwtPlotTextLabel *poTextLabel = static_cast<QwtPlotTextLabel *>( *it );
 
             poTextLabel->detach();
-            delete poTextLabel;
-            poTextLabel = NULL;
+            if(poTextLabel != NULL)
+            {
+                delete poTextLabel;
+                poTextLabel = NULL;
+            }
         }
     }
 
@@ -872,6 +938,13 @@ void MainWindow::drawScatter()
         qDebugV5()<<"Auto delete all items not work!";
     }
 
+    ui->plotScatter->detachItems();
+    /* Clean up the Copy items, Before creating new scatter, Even without. */
+    if( gpoScatter != NULL )
+    {
+        delete gpoScatter;
+        gpoScatter = NULL;
+    }
     /* New a scatter */
     gpoScatter = new QwtPlotCurve(QString("%1Hz(%2)")
                                   .arg(gpoSelectedCurve->sample(giSelectedIndex).x())
@@ -924,6 +997,12 @@ void MainWindow::drawScatter()
     ui->plotScatter->setFooter(oStrFooter);
 
     ui->plotScatter->replot();
+
+    if( ui->plotScatter->isHidden())
+    {
+        ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterHide.png"));
+        ui->plotScatter->show();
+    }
 }
 
 void MainWindow::drawError()
@@ -1442,7 +1521,6 @@ QString MainWindow::LastDirRead()
 
     return oStrLastDir;
 }
-
 
 /***********************************************************************
  * Save the current project Dir as the most recently opened directory
