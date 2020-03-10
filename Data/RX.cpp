@@ -1,10 +1,10 @@
 #include "Data/RX.h"
 
 
-RX::RX(QString oStrFileName, QObject *parent):QObject(parent)
+RX::RX(QString oStrFileName, QObject *parent):
+    oStrCSV(oStrFileName),
+    QObject(parent)
 {
-    oStrCSV = oStrFileName;
-
     this->importRX(oStrFileName);
 }
 
@@ -110,6 +110,7 @@ void RX::importRX(QString oStrFileName)
 /* 刷新散点图，同时，平均值和相对均方误差也应该对应刷新。 */
 void RX::renewScatter(int iIndex)
 {
+    qDebugV0()<<oStrCSV;
     /*  */
     QFile oFile(oStrCSV);
     QString oStrLineCSV;
@@ -139,7 +140,7 @@ void RX::renewScatter(int iIndex)
 
             aoStrLineCSV = oStrLineCSV.split(',', QString::SkipEmptyParts);
 
-//            qDebugV0()<< aoStrLineCSV.first().toDouble();
+            //            qDebugV0()<< aoStrLineCSV.first().toDouble();
 
             aoStrLineCSV.removeFirst();
 

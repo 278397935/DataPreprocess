@@ -12,27 +12,27 @@ CONFIG   += C++11
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = DataPreprocess
+TARGET = DataPreprocessTang
 TEMPLATE = app
 
 
 SOURCES += main.cpp \
     Picker/MarkerPicker.cpp \
-    mainwindow.cpp \
+    Mainwindow.cpp \
     Data/RX.cpp \
-    Picker/canvaspicker.cpp \
+    Picker/CanvasPicker.cpp \
     CalRhoThread.cpp \
     MyDatabase.cpp
 HEADERS  += \
     Common/PublicDef.h \
     Picker/MarkerPicker.h \
-    mainwindow.h \
+    Mainwindow.h \
     Data/RX.h \
-    Picker/canvaspicker.h \
+    Picker/CanvasPicker.h \
     CalRhoThread.h \
     MyDatabase.h
 FORMS    += \
-    mainwindow.ui
+    Mainwindow.ui
 
 RESOURCES += \
     Res/Icon.qrc

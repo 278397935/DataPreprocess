@@ -19,14 +19,8 @@ public:
 
 private:
     void select( const QPoint & );
-    void move( const QPoint & );
-    void moveBy( int dx, int dy );
-
-    void release();
 
     void showCursor( bool enable );
-    void shiftPointCursor( bool up );
-    void shiftCurveCursor( bool up );
 
     QwtPlot *plot();
     const QwtPlot *plot() const;

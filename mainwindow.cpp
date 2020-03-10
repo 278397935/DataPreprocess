@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "Mainwindow.h"
 #include "ui_mainwindow.h"
 
 #include <QPainter>
@@ -94,6 +94,7 @@ MainWindow::MainWindow(QWidget *parent) :
     gpoErrorCurve = NULL;
 
     gpoSelectedCurve = NULL;
+    giSelectedIndex = -1;
 
     gpoSelectedRX = NULL;
 
@@ -122,9 +123,9 @@ MainWindow::MainWindow(QWidget *parent) :
                                            "border-style: solid;}" );
     ui->buttonScatterShift->setFlat(true);
 
-    initPlotCurve();
+    this->initPlotCurve();
 
-    initPlotScatter();
+    this->initPlotScatter();
 
     connect(ui->buttonScatterShift,SIGNAL(clicked()),this, SLOT(shiftScatter()));
 
@@ -202,6 +203,8 @@ MainWindow::MainWindow(QWidget *parent) :
     this->initPlotRho();
 
     connect(poCalRho, SIGNAL(SigRho(STATION, QVector<double>, QVector<double>)), this, SLOT(drawRho(STATION, QVector<double>, QVector<double>)));
+
+    aoStrExisting.clear();
 }
 
 MainWindow::~MainWindow()
@@ -242,38 +245,31 @@ void MainWindow::on_actionImportRX_triggered()
         return;
     }
 
-    QStringList aoStrExisting;
-    foreach(RX *poRxExisting, gapoRX)
-    {
-        qDebugV0()<<poRxExisting->oStrCSV;
-        aoStrExisting.append( poRxExisting->oStrCSV );
-    }
-
     foreach(QString oStrRxThisTime, aoStrRxThisTime)
     {
         if( aoStrExisting.contains(oStrRxThisTime) )
         {
-            qDebugV0()<<"existing~~~"<<oStrRxThisTime;
+            //qDebugV0()<<"existing~~~"<<oStrRxThisTime;
         }
         else
         {
-            qDebugV0()<<"Not existing~~~"<<oStrRxThisTime;
+            //            qDebugV0()<<"Not existing~~~"<<oStrRxThisTime;
 
             RX *poRX = new RX(oStrRxThisTime);
-
+            aoStrExisting.append(oStrRxThisTime);
             gapoRX.append(poRX);
         }
     }
 
     this->LastDirWrite( aoStrRxThisTime.last() );
 
-    qDebugV0()<<aoStrExisting;
+    //qDebugV0()<<aoStrExisting;
 
     this->drawCurve();
 
     QFileInfo oFileInfo(aoStrRxThisTime.last());
 
-    ui->plotRx->setFooter( "场值文件目录：" + oFileInfo.absolutePath() );
+    ui->plotRx->setTitle( "场值文件目录：" + oFileInfo.absolutePath() );
 }
 
 /*  Close Application */
@@ -290,7 +286,22 @@ void MainWindow::on_actionClear_triggered()
 
     if(oMsgBox.exec() == QMessageBox::Yes)
     {
+        gpoSelectedCurve = NULL;
+        giSelectedIndex = -1;
+
+        gpoSelectedRX = NULL;
+
+        gpoErrorCurve = NULL;
+
         ui->stackedWidget->setCurrentIndex(0);
+
+        QVector<double> xData;xData.clear();
+        QVector<double> yData;yData.clear();
+
+        gpoScatter->setSamples(xData, yData);
+
+        /* 散点图，褫干净 */
+        ui->plotScatter->replot();
 
         /* 电压除以电流的图，褫干净 */
         foreach (QwtPlotCurve *poCurve, gmapCurveData.keys())
@@ -318,24 +329,6 @@ void MainWindow::on_actionClear_triggered()
 
         ui->plotCurve->repaint();
 
-        /* 散点图，褫干净 */
-        /* Clean up the Copy items, Before creating new scatter, Even without. */
-        if( gpoScatter != NULL )
-        {
-            gpoScatter->detach();
-            delete gpoScatter;
-            gpoScatter = NULL;
-        }
-
-        /* New marker picker pointer */
-        if(poMarkerPicker != NULL)
-        {
-            disconnect( poMarkerPicker, SIGNAL(SigMarkerMoved()), this , SLOT(markerMoved()));
-            delete poMarkerPicker;
-            poMarkerPicker = NULL;
-        }
-
-        ui->plotScatter->replot();
 
         /* 右手边，tableWidget 褫干净 */
         foreach (QTreeWidgetItem *poItem, gmapCurveItem.values())
@@ -351,13 +344,15 @@ void MainWindow::on_actionClear_triggered()
 
         ui->treeWidgetLegend->clear();
 
-        ui->plotCurve->setFooter("");
+        ui->plotCurve->setTitle("");
 
         if( !ui->plotScatter->isHidden())
         {
             ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterShow.png"));
             ui->plotScatter->hide();
         }
+
+        aoStrExisting.clear();
     }
 }
 
@@ -437,7 +432,7 @@ void MainWindow::drawCurve()
     foreach (RX* poRX, gapoRX)
     {
         /* Curve title, cut MCSD_ & suffix*/
-        const QwtText oTxtTitle( QString("L%1-%2_D%3-%4_%5")
+        const QwtText oTxtTitle( QString(tr("线号:%1__点号:%2__仪器号:%3__通道号:%4(%5)"))
                                  .arg(poRX->goStrLineId)
                                  .arg(poRX->goStrSiteId)
                                  .arg(poRX->giDevId)
@@ -477,6 +472,14 @@ void MainWindow::drawCurve()
     }
 
     connect(ui->treeWidgetLegend, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(shiftCurveSelect(QTreeWidgetItem*,int)));
+
+
+    gpoSelectedCurve = NULL;
+    giSelectedIndex = -1;
+
+    gpoSelectedRX = NULL;
+
+    gpoErrorCurve = NULL;
 
     ui->plotCurve->replot();
 }
@@ -568,10 +571,14 @@ QPolygonF MainWindow::currentScatterPoints()
 QPolygonF MainWindow::currentCurvePoints()
 {
     QPolygonF aoPoint;
+    aoPoint.clear();
 
-    for(uint i = 0; i < gpoSelectedCurve->dataSize(); i++)
+    if(gpoSelectedCurve != NULL)
     {
-        aoPoint.append(gpoSelectedCurve->sample(i));
+        for(uint i = 0; i < gpoSelectedCurve->dataSize(); i++)
+        {
+            aoPoint.append(gpoSelectedCurve->sample(i));
+        }
     }
 
     return aoPoint;
@@ -583,8 +590,7 @@ QPolygonF MainWindow::currentCurvePoints()
  */
 void MainWindow::initPlotCurve()
 {
-    //ui->plotCurve->setTitle(QwtText("Curve Plot"));
-    QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
+    QFont oFont("Times New Roman", 12, QFont::Thin);
 
     ui->plotCurve->setFont(oFont);
 
@@ -608,18 +614,18 @@ void MainWindow::initPlotCurve()
 
     /* Set Axis title */
     //QwtText oTxtXAxisTitle( "频率(Hz)" );
-    //    QwtText oTxtYAxisTitle( "电场(mV)" );
-    QwtText oTxtErrAxisTitle(tr("相对均方误差(%)"));
+//    QwtText oTxtYAxisTitle( "F/I" );
+    QwtText oTxtErrAxisTitle(tr("RMS(%)"));
     //oTxtXAxisTitle.setFont( oFont );
     //oTxtYAxisTitle.setFont( oFont );
     oTxtErrAxisTitle.setFont( oFont );
     //ui->plotCurve->setAxisTitle(QwtPlot::xBottom, oTxtXAxisTitle);
-    //    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
+//    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
     ui->plotCurve->setAxisTitle(QwtPlot::yRight,  oTxtErrAxisTitle);
 
     /* Draw the canvas grid */
     QwtPlotGrid *poGrid = new QwtPlotGrid();
-    poGrid->enableX( false );
+    //poGrid->enableX( true );
     poGrid->enableY( true );
     poGrid->setMajorPen( Qt::gray, 0.5, Qt::DotLine );
     poGrid->attach( ui->plotCurve );
@@ -665,6 +671,8 @@ void MainWindow::initPlotCurve()
     /* 平移 */
     QwtPlotPanner *poPanner = new QwtPlotPanner(ui->plotCurve->canvas());
     poPanner->setMouseButton(Qt::LeftButton);
+
+    ui->plotCurve->replot();
 }
 
 /********************************************************************************
@@ -677,8 +685,42 @@ void MainWindow::initPlotScatter()
     ui->plotScatter->enableAxis(QwtPlot::xBottom, true);
     ui->plotScatter->enableAxis(QwtPlot::yLeft,   true);
     ui->plotScatter->setAutoDelete ( true );
+    ////
+    /* Clean up the Copy items, Before creating new scatter, Even without. */
+    if( gpoScatter != NULL )
+    {
+        delete gpoScatter;
+        gpoScatter = NULL;
+    }
+    /* New a scatter */
+    gpoScatter = new QwtPlotCurve;
+
+    if( gpoScatter == NULL )
+    {
+        return;
+    }
+
+    /* New marker picker pointer */
+    if(poMarkerPicker != NULL)
+    {
+        delete poMarkerPicker;
+        poMarkerPicker = NULL;
+    }
+
+    poMarkerPicker = new MarkerPicker( ui->plotScatter, gpoScatter );
+    connect( poMarkerPicker, SIGNAL(SigMarkerMoved()), this , SLOT(markerMoved()));
+
+    gpoScatter->setStyle(QwtPlotCurve::NoCurve);
 
 
+
+    QwtSymbol *poSymbol = new QwtSymbol( QwtSymbol::Ellipse,
+                                         QBrush( Qt::blue ),
+                                         QPen( Qt::blue, 1.0 ),
+                                         QSize( 6, 6 ) );
+    gpoScatter->setSymbol(poSymbol);
+
+    gpoScatter->attach(ui->plotScatter);
 
     ui->plotScatter->replot();
 }
@@ -804,20 +846,23 @@ void MainWindow::shiftCurveSelect(QTreeWidgetItem *poItem, int iCol)
     }
 }
 
+/* slot 函数。 接收picker对象的signal  SigSelected(poCurve, index) */
 void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
 {
-    gpoSelectedCurve = poCurve;
-    giSelectedIndex = iIndex;
-
-    if( poCurve->title().text() != "相对均方误差")
+    if( poCurve->style() == QwtPlotCurve::Lines)
     {
+        gpoSelectedCurve = poCurve;
+        giSelectedIndex = iIndex;
+
+        gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
+
         this->restoreCurve();
 
         this->drawScatter();
         this->switchHighlightCurve();
         this->drawError();
 
-        QString oStrFooter(QString("%1     频率: %2Hz")
+        QString oStrFooter(QString("%1__频率:%2Hz")
                            .arg(poCurve->title().text())
                            .arg(poCurve->data()->sample(iIndex).x()));
         QwtText oTxt;
@@ -826,12 +871,17 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
         oTxt.setFont(oFont);
         oTxt.setColor(Qt::blue);
 
-        ui->plotCurve->setFooter(oTxt);
+        ui->plotCurve->setTitle(oTxt);
+    }
+    else if(poCurve->style() == QwtPlotCurve::Sticks)
+    {
+        qDebugV0()<<"相对均方误差   quxian玩不得~~~";
+        ui->plotCurve->setTitle("");
     }
     else
     {
-        qDebugV0()<<"相对均方误差   quxian玩不得~~~";
-        ui->plotCurve->setFooter("");
+        qDebugV0()<<"buxiade s shme 玩不得~~~";
+        ui->plotCurve->setTitle("");
     }
 }
 
@@ -852,7 +902,7 @@ void MainWindow::markerMoved()
         return;
     }
 
-    gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
+    //gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
 
     QVector<qreal> arE;
     arE.clear();
@@ -897,7 +947,15 @@ void MainWindow::markerMoved()
 
     /* Update MSRE */
     QString oStrFooter(QString("相对均方误差: %1%").arg(gpoSelectedRX->getErr(arE)));
-    ui->plotScatter->setFooter(oStrFooter);
+
+    QwtText oTxt;
+    QFont oFont("Times New Roman", 12, QFont::Thin);
+    oTxt.setFont(oFont);
+    oTxt.setColor(Qt::red);
+
+    oTxt.setText(oStrFooter);
+
+    ui->plotScatter->setFooter(oTxt);
 
     ui->plotCurve->replot();
 }
@@ -938,38 +996,14 @@ void MainWindow::drawScatter()
         qDebugV5()<<"Auto delete all items not work!";
     }
 
-    ui->plotScatter->detachItems();
-    /* Clean up the Copy items, Before creating new scatter, Even without. */
-    if( gpoScatter != NULL )
-    {
-        delete gpoScatter;
-        gpoScatter = NULL;
-    }
-    /* New a scatter */
-    gpoScatter = new QwtPlotCurve(QString("%1Hz(%2)")
-                                  .arg(gpoSelectedCurve->sample(giSelectedIndex).x())
-                                  .arg(gpoSelectedCurve->title().text()));
+    gpoScatter->setTitle(QString("%1Hz(%2)")
+                         .arg(gpoSelectedCurve->sample(giSelectedIndex).x())
+                         .arg(gpoSelectedCurve->title().text()));
 
-    if( gpoScatter == NULL )
-    {
-        return;
-    }
 
-    /* New marker picker pointer */
-    if(poMarkerPicker != NULL)
-    {
-        delete poMarkerPicker;
-        poMarkerPicker = NULL;
-    }
+    RX *poRxSelected = gmapCurveData.value(gpoSelectedCurve);
 
-    poMarkerPicker = new MarkerPicker( ui->plotScatter, gpoScatter );
-    connect( poMarkerPicker, SIGNAL(SigMarkerMoved()), this , SLOT(markerMoved()));
-
-    gpoScatter->setStyle(QwtPlotCurve::NoCurve);
-
-    RX *poRX = gmapCurveData.value(gpoSelectedCurve);
-
-    QVector<double> adScatter = poRX->aadScatter.at(giSelectedIndex);
+    QVector<double> adScatter = poRxSelected->aadScatter.at(giSelectedIndex);
     QVector<double> adX;
     adX.clear();
 
@@ -986,16 +1020,19 @@ void MainWindow::drawScatter()
                                          QSize( 6, 6 ) );
     gpoScatter->setSymbol(poSymbol);
 
-    gpoScatter->attach(ui->plotScatter);
 
     /* Real time set plot canvas Scale & Set aside blank. */
     this->resizeScaleScatter();
 
     /* Read Excel file(copy), display MSRE on PlotCurve canvas(Top||Right) */
     /* Display MSRE on footer */
-    QString oStrFooter(QString("相对均方误差: %1%").arg( poRX->adErr.at(giSelectedIndex) ));
-    ui->plotScatter->setFooter(oStrFooter);
-
+    QString oStrFooter(QString("相对均方误差: %1%").arg( poRxSelected->adErr.at(giSelectedIndex) ));
+    QwtText oTxt;
+    QFont oFont("Times New Roman", 12, QFont::Thin);
+    oTxt.setFont(oFont);
+    oTxt.setColor(Qt::red);
+    oTxt.setText(oStrFooter);
+    ui->plotScatter->setFooter(oTxt);
     ui->plotScatter->replot();
 
     if( ui->plotScatter->isHidden())
@@ -1007,12 +1044,12 @@ void MainWindow::drawScatter()
 
 void MainWindow::drawError()
 {
-    /* Clear old Curve(MSRE) pointer */
-    if( gpoErrorCurve != NULL )
+    if( gpoErrorCurve != NULL)
     {
         gpoErrorCurve->detach();
+
         delete gpoErrorCurve;
-        gpoErrorCurve = NULL;
+         gpoErrorCurve = NULL;
     }
 
     /* Draw new error bar */
@@ -1021,6 +1058,8 @@ void MainWindow::drawError()
     {
         return;
     }
+
+    qDebugV0()<<gpoErrorCurve->title().text();
 
     gpoErrorCurve->setLegendAttribute( QwtPlotCurve::LegendNoAttribute, true );
 
@@ -1031,13 +1070,16 @@ void MainWindow::drawError()
 
     gpoErrorCurve->setSymbol( PoSymbol );
 
-    RX *poRX = gmapCurveData.value(gpoSelectedCurve);
-
-    gpoErrorCurve->setSamples( poRX->adF, poRX->adErr );
     gpoErrorCurve->setAxes( QwtPlot::xBottom, QwtPlot::yRight );
     gpoErrorCurve->setPen( Qt::black, 0.5, Qt::DotLine );
     gpoErrorCurve->setStyle( QwtPlotCurve::Sticks );
+
+
+    RX *poRX = gmapCurveData.value(gpoSelectedCurve);
+
+    gpoErrorCurve->setSamples( poRX->adF, poRX->adErr );
     gpoErrorCurve->attach( ui->plotCurve );
+
 
     ui->plotCurve->replot();
 }
@@ -1108,7 +1150,7 @@ void MainWindow::initPlotRx()
     //    ui->plotRx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
-    QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
+    QFont oFont("Times New Roman", 12, QFont::Thin);
 
     QwtText oTxtTitle( "接收端_场值曲线" );
     oTxtTitle.setFont( oFont );
@@ -1205,7 +1247,8 @@ void MainWindow::drawRx()
     foreach (RX* poRX, gapoRX)
     {
         /* Curve title, cut MCSD_ & suffix*/
-        const QwtText oTxtTitle( QString("L%1-%2_D%3-%4_%5")
+        /* Curve title, cut MCSD_ & suffix*/
+        const QwtText oTxtTitle( QString(tr("线号:%1_点号:%2_仪器号:%3_通道号:%4(%5)"))
                                  .arg(poRX->goStrLineId)
                                  .arg(poRX->goStrSiteId)
                                  .arg(poRX->giDevId)
@@ -1249,7 +1292,7 @@ void MainWindow::initPlotRho()
     ui->plotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
-    QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
+    QFont oFont("Times New Roman", 12, QFont::Thin);
 
     QwtText oTxtTitle( "广域视电阻率曲线" );
     oTxtTitle.setFont( oFont );
@@ -1310,7 +1353,7 @@ void MainWindow::initPlotRho()
 
     ui->plotRho->plotLayout()->setAlignCanvasToScales( true );
 
-    //ui->plotRho->setFooter(("-------"));
+    //ui->plotRho->setTitle(("-------"));
 
     ui->plotRho->setAutoReplot(true);
 }
@@ -1329,7 +1372,7 @@ void MainWindow::restoreCurve()
 
         gpoSelectedCurve->setSamples( poRX->adF, adR );
 
-        ui->plotCurve->setFooter("");
+        ui->plotCurve->setTitle("");
 
         ui->plotCurve->replot();
     }
@@ -1565,7 +1608,7 @@ void MainWindow::LastDirWrite(QString oStrFileName)
 void MainWindow::initPlotTx()
 {
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
-    QFont oFont( "微软雅黑,9,-1,5,50,0,0,0,0,0" );
+    QFont oFont("Times New Roman", 12, QFont::Thin);
 
     //    ui->plotTx->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
@@ -1679,10 +1722,14 @@ void MainWindow::on_actionExportRho_triggered()
  */
 void MainWindow::on_actionRecovery_triggered()
 {
-    if( gpoSelectedCurve == NULL )
+    if( gpoSelectedCurve == NULL || giSelectedIndex == -1)
     {
+        this->showMsg("未选中曲线上的点！");
         return;
     }
+
+    qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
+
 
     /* Read scatter from Sctatter table, then update curve && error Table */
     gpoSelectedRX->renewScatter(giSelectedIndex);

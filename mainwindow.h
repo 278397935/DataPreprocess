@@ -18,7 +18,7 @@
 #include <QInputDialog>
 
 #include "Data/RX.h"
-#include "Picker/canvaspicker.h"
+#include "Picker/Canvaspicker.h"
 #include "Picker/MarkerPicker.h"
 
 
@@ -124,6 +124,10 @@ private:
     void drawRx();
 
     void initPlotRho();
+
+
+    QStringList aoStrExisting;
+
 
 private slots:
     void on_actionImportTX_triggered();
