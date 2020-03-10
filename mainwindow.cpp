@@ -275,7 +275,15 @@ void MainWindow::on_actionImportRX_triggered()
 /*  Close Application */
 void MainWindow::on_actionClose_triggered()
 {
-    this->close();
+    QMessageBox oMsgBox(QMessageBox::Question, "询问", "确定退出?",
+                        QMessageBox::Yes | QMessageBox::No, NULL);
+
+    if(oMsgBox.exec() == QMessageBox::Yes)
+    {
+        this->store();
+
+        this->close();
+    }
 }
 
 /*  */
@@ -371,6 +379,46 @@ void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
     poCurve->setSamples(gpoSelectedRX->adF, adR);
 
     ui->plotCurve->replot();
+}
+
+void MainWindow::store()
+{
+    foreach(RX *poRx, gapoRX)
+    {
+        qDebugV0()<<poRx->oStrCSV;
+
+        QString oStrFileName = poRx->oStrCSV;
+        oStrFileName.chop(4);
+        qDebugV0()<<oStrFileName;
+
+        oStrFileName.append(QString("_filter_%1.csv")
+                            .arg(QDateTime::currentDateTime().toString("yyyy年MM月dd日_hh时mm分ss秒")));
+
+
+        qDebugV0()<<oStrFileName;
+
+        QFile file(oStrFileName);
+
+        if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+
+            return;
+        }
+
+        QTextStream out(&file);
+        for(int i = 0; i < poRx->adF.count(); i++)
+        {
+            out<<poRx->adF.at(i)<<",";
+
+            foreach (double dScatter, poRx->aadScatter.at(i))
+            {
+                out<<dScatter<<",";
+            }
+
+            out<<"\n";
+        }
+        file.close();
+    }
 }
 
 /**********************************************************************
@@ -614,13 +662,13 @@ void MainWindow::initPlotCurve()
 
     /* Set Axis title */
     //QwtText oTxtXAxisTitle( "频率(Hz)" );
-//    QwtText oTxtYAxisTitle( "F/I" );
+    //    QwtText oTxtYAxisTitle( "F/I" );
     QwtText oTxtErrAxisTitle(tr("RMS(%)"));
     //oTxtXAxisTitle.setFont( oFont );
     //oTxtYAxisTitle.setFont( oFont );
     oTxtErrAxisTitle.setFont( oFont );
     //ui->plotCurve->setAxisTitle(QwtPlot::xBottom, oTxtXAxisTitle);
-//    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
+    //    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
     ui->plotCurve->setAxisTitle(QwtPlot::yRight,  oTxtErrAxisTitle);
 
     /* Draw the canvas grid */
@@ -1049,7 +1097,7 @@ void MainWindow::drawError()
         gpoErrorCurve->detach();
 
         delete gpoErrorCurve;
-         gpoErrorCurve = NULL;
+        gpoErrorCurve = NULL;
     }
 
     /* Draw new error bar */

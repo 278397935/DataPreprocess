@@ -63,6 +63,8 @@ public:
     /* Draw Curve */
     void recoveryCurve(QwtPlotCurve *poCurve);
 
+    void store();
+
 private:
     Ui::MainWindow *ui;
 
