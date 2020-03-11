@@ -8,6 +8,7 @@
 #include <qwt_plot_canvas.h>
 #include <qwt_plot_curve.h>
 #include <qwt_plot_directpainter.h>
+
 #include "Canvaspicker.h"
 
 CanvasPicker::CanvasPicker( QwtPlot *plot ):
@@ -41,11 +42,6 @@ const QwtPlot *CanvasPicker::plot() const
 
 bool CanvasPicker::event( QEvent *ev )
 {
-//    if ( ev->type() == QEvent::User )
-//    {
-//        showCursor( true );
-//        return true;
-//    }
     return QObject::event( ev );
 }
 
@@ -56,16 +52,6 @@ bool CanvasPicker::eventFilter( QObject *object, QEvent *event )
 
     switch( event->type() )
     {
-    //    case QEvent::FocusIn:
-    //    {
-    //        showCursor( true );
-    //        break;
-    //    }
-    //    case QEvent::FocusOut:
-    //    {
-    //        showCursor( false );
-    //        break;
-    //    }
     case QEvent::Paint:
     {
         QApplication::postEvent( this, new QEvent( QEvent::User ) );
@@ -77,7 +63,6 @@ bool CanvasPicker::eventFilter( QObject *object, QEvent *event )
         select( mouseEvent->pos() );
         return true;
     }
-
     default:
         break;
     }
@@ -115,45 +100,14 @@ void CanvasPicker::select( const QPoint &pos )
         }
     }
 
-//    showCursor( false );
     d_selectedCurve = NULL;
     d_selectedPoint = -1;
-
-    qDebug()<<"~~~look    how:"<< curve->title().text();
 
     if ( curve && dist < 10 ) // 10 pixels tolerance
     {
         d_selectedCurve = curve;
         d_selectedPoint = index;
-//        showCursor( true );
 
         emit SigSelected(d_selectedCurve, d_selectedPoint);
-    }
-}
-
-// Hightlight the selected point
-void CanvasPicker::showCursor( bool showIt )
-{
-    qDebug()<<"only~~~:"<<showIt;
-    if ( d_selectedCurve == NULL )
-    {
-        return;
-    }
-    //  qDebug()<<"showCursor"<<d_selectedCurve->title().text()<<"bool"<<showIt;
-    QwtSymbol *symbol = const_cast<QwtSymbol *>( d_selectedCurve->symbol() );
-
-    const QBrush brush = symbol->brush();
-
-    if ( showIt )
-    {
-        symbol->setBrush( symbol->brush().color().dark( 10 ) );
-    }
-
-    QwtPlotDirectPainter directPainter;
-    directPainter.drawSeries( d_selectedCurve, d_selectedPoint, d_selectedPoint );
-
-    if ( showIt )
-    {
-        symbol->setBrush( brush ); // reset brush
     }
 }

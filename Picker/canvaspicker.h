@@ -6,7 +6,6 @@ class QCustomEvent;
 class QwtPlot;
 class QwtPlotCurve;
 
-
 class CanvasPicker: public QObject
 {
     Q_OBJECT
@@ -19,8 +18,6 @@ public:
 
 private:
     void select( const QPoint & );
-
-    void showCursor( bool enable );
 
     QwtPlot *plot();
     const QwtPlot *plot() const;
