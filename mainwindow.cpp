@@ -274,12 +274,17 @@ void MainWindow::on_actionImportRX_triggered()
 /*  Close Application */
 void MainWindow::on_actionClose_triggered()
 {
-    QMessageBox oMsgBox(QMessageBox::Question, "退出", "确定退出",
-                        QMessageBox::Yes | QMessageBox::No, NULL);
+    QMessageBox oMsgBoxClose(QMessageBox::Question, "退出", "确定退出？",
+                             QMessageBox::Yes | QMessageBox::No, NULL);
 
-    if(oMsgBox.exec() == QMessageBox::Yes)
+    if(oMsgBoxClose.exec() == QMessageBox::Yes)
     {
-        this->store();
+        QMessageBox oMsgBoxStore(QMessageBox::Question, "保存", "确定保存",
+                                 QMessageBox::Yes | QMessageBox::No, NULL);
+        if(oMsgBoxStore.exec() == QMessageBox::Yes)
+        {
+            this->store();
+        }
 
         this->close();
     }
