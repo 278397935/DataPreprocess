@@ -163,7 +163,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(poDb, SIGNAL(SigModelTX(QSqlTableModel*)), this, SLOT(showTableTX(QSqlTableModel*)));
     connect(poDb, SIGNAL(SigModelRX(QSqlTableModel*)), this, SLOT(showTableRX(QSqlTableModel*)));
     connect(poDb, SIGNAL(SigModelXY(QSqlTableModel*)), this, SLOT(showTableXY(QSqlTableModel*)));
-
     connect(poDb, SIGNAL(SigModelRho(QSqlTableModel*)), this, SLOT(showTableRho(QSqlTableModel*)));
 
     ui->tabWidget->setTabText(0, "电流");
@@ -275,7 +274,7 @@ void MainWindow::on_actionImportRX_triggered()
 /*  Close Application */
 void MainWindow::on_actionClose_triggered()
 {
-    QMessageBox oMsgBox(QMessageBox::Question, "询问", "确定退出?",
+    QMessageBox oMsgBox(QMessageBox::Question, "退出", "确定退出",
                         QMessageBox::Yes | QMessageBox::No, NULL);
 
     if(oMsgBox.exec() == QMessageBox::Yes)
@@ -381,6 +380,7 @@ void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
     ui->plotCurve->replot();
 }
 
+/* 保存中间结果， */
 void MainWindow::store()
 {
     foreach(RX *poRx, gapoRX)
@@ -1106,8 +1106,6 @@ void MainWindow::drawError()
     {
         return;
     }
-
-    qDebugV0()<<gpoErrorCurve->title().text();
 
     gpoErrorCurve->setLegendAttribute( QwtPlotCurve::LegendNoAttribute, true );
 

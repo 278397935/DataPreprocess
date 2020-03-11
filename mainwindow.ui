@@ -192,33 +192,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>800</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>文件</string>
-    </property>
-    <addaction name="actionImportTX"/>
-    <addaction name="actionImportRX"/>
-    <addaction name="actionExportRho"/>
-   </widget>
-   <widget class="QMenu" name="menuCutter">
-    <property name="title">
-     <string>裁剪</string>
-    </property>
-    <addaction name="actionCutterV"/>
-    <addaction name="actionCutterH"/>
-   </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuCutter"/>
-  </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
@@ -288,7 +261,10 @@
      <normaloff>:/GDC2/Icon/Close.png</normaloff>:/GDC2/Icon/Close.png</iconset>
    </property>
    <property name="text">
-    <string>关闭</string>
+    <string>退出程序</string>
+   </property>
+   <property name="toolTip">
+    <string>退出程序</string>
    </property>
   </action>
   <action name="actionRecovery">
@@ -309,10 +285,10 @@
      <normaloff>:/GDC2/Icon/clear.png</normaloff>:/GDC2/Icon/clear.png</iconset>
    </property>
    <property name="text">
-    <string>清除数据</string>
+    <string>清除数据(Ctrl+C)</string>
    </property>
    <property name="toolTip">
-    <string>清除数据</string>
+    <string>清除数据(Ctrl+C)</string>
    </property>
   </action>
   <action name="actionExportRho">
@@ -321,10 +297,10 @@
      <normaloff>:/GDC2/Icon/Export.ico</normaloff>:/GDC2/Icon/Export.ico</iconset>
    </property>
    <property name="text">
-    <string>导出Rho</string>
+    <string>导出广域视电阻率</string>
    </property>
    <property name="toolTip">
-    <string>导出Rho</string>
+    <string>导出广域视电阻率</string>
    </property>
   </action>
   <action name="actionImportRX">
@@ -345,7 +321,10 @@
      <normaloff>:/GDC2/Icon/RhoCal.png</normaloff>:/GDC2/Icon/RhoCal.png</iconset>
    </property>
    <property name="text">
-    <string>CalRho</string>
+    <string>计算广域视电阻率</string>
+   </property>
+   <property name="toolTip">
+    <string>计算广域视电阻率</string>
    </property>
   </action>
  </widget>
