@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "Common/PublicDef.h"
+
 #include <QMainWindow>
 #include <QFileDialog>
 
@@ -21,6 +23,7 @@
 #include "Picker/Canvaspicker.h"
 #include "Picker/MarkerPicker.h"
 
+#include "Picker/CanvasPickerRho.h"
 
 #include "CalRhoThread.h"
 
@@ -130,6 +133,7 @@ private:
 
     QStringList aoStrExisting;
 
+    QMap<QwtPlotCurve*, STATION> gmapCurveStation;
 
 private slots:
     void on_actionImportTX_triggered();
@@ -145,7 +149,11 @@ private slots:
 
     void showMsg(QString oStrMsg);
 
+    /* 保存到Rx类中 */
     void on_actionSave_triggered();
+
+    void on_actionStore_triggered();
+
 
     void on_actionCalRho_triggered();
 
@@ -156,13 +164,14 @@ private slots:
 
     void drawRho(STATION oStation, QVector<double> adF, QVector<double>adRho);
 
-public slots:
-    /* Insert Horizontal Marker line */
-    void drawMarkerH();
 
     /* Insert Vertical Marker line */
-    void drawMarkerV();
+    void on_actionCutterV_triggered();
 
+    /* Insert Horizontal Marker line */
+    void on_actionCutterH_triggered();
+
+public slots:
     /* Draw Curve */
     void drawCurve();
 
@@ -183,6 +192,9 @@ public slots:
     void shiftCurveSelect(QTreeWidgetItem* poItem ,int iCol);
 
     void Selected(QwtPlotCurve*poCurve, int iIndex);
+
+    /* 手动拖动广域视电阻率，调整曲线形态功能。 */
+    void SelectedRho(QwtPlotCurve *poCurve, int iIndex);
 
     /* When Select point changed, then show scatter plot! */
     void drawScatter();

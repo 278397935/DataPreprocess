@@ -35,25 +35,6 @@
 
 #define FloatPrecision 3
 
-enum FILE_TYPE
-{
-    FILE_RX = 0,
-    FILE_TX,
-    FILE_XY
-};
-
-enum RX_SRC
-{
-    RX_ORG = 0,
-    RX_TEMP
-};
-
-enum EXIST_SWITCH
-{
-    EXIST_NO = 0,
-    EXIST_YES
-};
-
 struct STATION_INFO
 {
     quint32 uiLineId;
@@ -74,7 +55,4 @@ struct Position
     double dNY;
     double dNZ;
 };
-
-
-
 #endif // PUBLICDEF_H

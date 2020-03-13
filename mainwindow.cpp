@@ -1,4 +1,4 @@
-#include "Mainwindow.h"
+#include "mainwindow.h"
 #include "ui_mainwindow.h"
 
 #include <QPainter>
@@ -33,7 +33,7 @@ public:
                     painter->save();
                     //painter->setPen(Qt::darkBlue);
                     painter->setBrush(QBrush(Qt::blue));
-                    painter->drawRect(allRect.adjusted(6, 6, -6, -6));
+                    painter->drawRect(allRect.adjusted(8, 8, -8, -8));
                     painter->restore();
                 }
 
@@ -60,6 +60,8 @@ public:
         }
     }
 };
+
+/* 主界面的构造函数 */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -68,22 +70,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->setWindowTitle("Tang_广域数据预处理工具_" + QDateTime::currentDateTime().toString("yyyy年MM月dd日AP"));
 
-    qDebugV0()<<QThread::currentThreadId();
-
-    qRegisterMetaType<FILE_TYPE>("FILE_TYPE");
     qRegisterMetaType<STATION_INFO>("STATION_INFO");
     qRegisterMetaType< QVector<qreal> >("QVector<qreal>");
 
     /* Draw marker line */
     ui->actionCutterH->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
-    connect(ui->actionCutterH, SIGNAL(triggered()), this, SLOT(drawMarkerH()));
-
     ui->actionCutterV->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_V));
-    connect(ui->actionCutterV, SIGNAL(triggered()), this, SLOT(drawMarkerV()));
 
     ui->actionSave->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
     ui->actionRecovery->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
 
+    /* 初始化一些变量，容器。 */
     gmapCurveData.clear();
 
     gmapCurveItem.clear();
@@ -107,8 +104,6 @@ MainWindow::MainWindow(QWidget *parent) :
     /* Init poCurvePicker */
     poCurvePicker = new CanvasPicker( ui->plotCurve );
     connect(poCurvePicker, SIGNAL(SigSelected(QwtPlotCurve*,int)), this, SLOT(Selected(QwtPlotCurve*,int)));
-
-    ui->plotScatter->hide();
 
     ui->buttonScatterShift->setFixedHeight(12);
     ui->buttonScatterShift->setIconSize(QSize(10, 10));
@@ -156,6 +151,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->actionExportRho->setEnabled(false);
 
+    /* 初始状态, 置为:Disable */
+    ui->actionImportTX->setEnabled(true);
+    ui->actionImportRX->setEnabled(false);
+    ui->actionClear->setEnabled(false);
+    ui->actionCutterH->setEnabled(false);
+    ui->actionCutterV->setEnabled(false);
+    ui->actionSave->setEnabled(false);
+    ui->actionRecovery->setEnabled(false);
+    ui->actionStore->setEnabled(false);
+    ui->actionCalRho->setEnabled(false);
+    ui->actionExportRho->setEnabled(false);
 
     poDb = new MyDatabase();
     poDb->connect();
@@ -168,8 +174,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tabWidget->setTabText(0, "电流");
     ui->tabWidget->setTabText(1, "场值");
     ui->tabWidget->setTabText(2, "坐标");
-    ui->tabWidget->setTabText(3, "广域视电阻率表格");
-    ui->tabWidget->setTabText(4, "广域视电阻率曲线");
+    ui->tabWidget->setTabText(3, "广域\u03c1表格");
+    ui->tabWidget->setTabText(4, "广域\u03c1曲线");
 
     /* 根据内容，决定列宽 */
     ui->tableViewTX->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -262,13 +268,25 @@ void MainWindow::on_actionImportRX_triggered()
 
     this->LastDirWrite( aoStrRxThisTime.last() );
 
-    //qDebugV0()<<aoStrExisting;
-
     this->drawCurve();
 
     QFileInfo oFileInfo(aoStrRxThisTime.last());
 
     ui->plotRx->setTitle( "场值文件目录：" + oFileInfo.absolutePath() );
+
+    /* 接收端数据来了,都做了电流归一化(画曲线的时候归一化)了,就不能再添加发射端的电流数据了 */
+    if(ui->actionImportTX->isEnabled())
+    {
+        ui->actionImportTX->setEnabled(false);
+    }
+
+    /* 添加进了新的Rx数据,就可以开放清理数据了. */
+    if(!ui->actionClear->isEnabled())
+    {
+        ui->actionClear->setEnabled(true);
+    }
+
+    ui->actionCalRho->setEnabled(true);
 }
 
 /*  Close Application */
@@ -279,11 +297,15 @@ void MainWindow::on_actionClose_triggered()
 
     if(oMsgBoxClose.exec() == QMessageBox::Yes)
     {
-        QMessageBox oMsgBoxStore(QMessageBox::Question, "保存", "确定保存",
-                                 QMessageBox::Yes | QMessageBox::No, NULL);
-        if(oMsgBoxStore.exec() == QMessageBox::Yes)
+        /* 判断有必要询问保存不保存中间结果,看store按钮是否可用. 都不可用了,还保存啥~?*/
+        if( ui->actionStore->isEnabled())
         {
-            this->store();
+            QMessageBox oMsgBoxStore(QMessageBox::Question, "保存", "确定保存",
+                                     QMessageBox::Yes | QMessageBox::No, NULL);
+            if(oMsgBoxStore.exec() == QMessageBox::Yes)
+            {
+                this->store();
+            }
         }
 
         this->close();
@@ -293,11 +315,27 @@ void MainWindow::on_actionClose_triggered()
 /*  */
 void MainWindow::on_actionClear_triggered()
 {
-    QMessageBox oMsgBox(QMessageBox::Question, "清空数据", "确定清空数据?",
+    QMessageBox oMsgBox(QMessageBox::Question, "清除", "确定清空数据?",
                         QMessageBox::Yes | QMessageBox::No, NULL);
 
     if(oMsgBox.exec() == QMessageBox::Yes)
     {
+        /* 数据都清了,要重新来导入数据了. */
+        if(!ui->actionImportTX->isEnabled())
+        {
+            ui->actionImportTX->setEnabled(true);
+        }
+
+        if(ui->actionStore->isEnabled())
+        {
+            QMessageBox oMsgBoxStore(QMessageBox::Question, "保存", "即将关闭接收端数据,\n是否将处理结果保存?",
+                                     QMessageBox::Yes | QMessageBox::No, NULL);
+            if(oMsgBoxStore.exec() == QMessageBox::Yes)
+            {
+                this->store();
+            }
+        }
+
         gpoSelectedCurve = NULL;
         giSelectedIndex = -1;
 
@@ -365,6 +403,13 @@ void MainWindow::on_actionClear_triggered()
         }
 
         aoStrExisting.clear();
+
+        /*  */
+        ui->actionClear->setEnabled(false);
+
+        /* 发射端和接收端数据都清除了,关闭 剪裁 功能*/
+        ui->actionCutterH->setEnabled(false);
+        ui->actionCutterV->setEnabled(false);
     }
 }
 
@@ -424,6 +469,9 @@ void MainWindow::store()
         }
         file.close();
     }
+
+    /* 中间结果保存完了之后,将store键置为Disable */
+    ui->actionStore->setEnabled(false);
 }
 
 /**********************************************************************
@@ -552,11 +600,11 @@ void MainWindow::resizeScaleScatter()
 
     if( sMkList.poTop != NULL && sMkList.poBottom != NULL )
     {
-        drawMarkerH();
+        this->on_actionCutterH_triggered();
     }
     else if( sMkList.poLeft != NULL && sMkList.poRight != NULL )
     {
-        drawMarkerV();
+        this->on_actionCutterV_triggered();
     }
 }
 
@@ -648,7 +696,7 @@ void MainWindow::initPlotCurve()
     ui->plotCurve->setFont(oFont);
 
     /* Nice blue */
-    //ui->plotCurve->setCanvasBackground(QColor(55, 100, 141));
+    //    ui->plotCurve->setCanvasBackground(QColor(55, 100, 141));
 
     /* Set Log Scale */
     ui->plotCurve->setAxisScaleEngine( QwtPlot::xBottom, new QwtLogScaleEngine() );
@@ -667,13 +715,13 @@ void MainWindow::initPlotCurve()
 
     /* Set Axis title */
     //QwtText oTxtXAxisTitle( "频率(Hz)" );
-    //    QwtText oTxtYAxisTitle( "F/I" );
+    //QwtText oTxtYAxisTitle( "F/I" );
     QwtText oTxtErrAxisTitle(tr("RMS(%)"));
     //oTxtXAxisTitle.setFont( oFont );
     //oTxtYAxisTitle.setFont( oFont );
     oTxtErrAxisTitle.setFont( oFont );
     //ui->plotCurve->setAxisTitle(QwtPlot::xBottom, oTxtXAxisTitle);
-    //    ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
+    //ui->plotCurve->setAxisTitle(QwtPlot::yLeft,   oTxtYAxisTitle);
     ui->plotCurve->setAxisTitle(QwtPlot::yRight,  oTxtErrAxisTitle);
 
     /* Draw the canvas grid */
@@ -734,6 +782,8 @@ void MainWindow::initPlotCurve()
  */
 void MainWindow::initPlotScatter()
 {
+    ui->plotScatter->hide();
+
     ui->plotScatter->setFrameStyle(QFrame::NoFrame);
     ui->plotScatter->enableAxis(QwtPlot::xBottom, true);
     ui->plotScatter->enableAxis(QwtPlot::yLeft,   true);
@@ -915,7 +965,7 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
         this->switchHighlightCurve();
         this->drawError();
 
-        QString oStrFooter(QString("%1__频率:%2Hz")
+        QString oStrFooter(QString("%1 \u2708 频率:%2Hz")
                            .arg(poCurve->title().text())
                            .arg(poCurve->data()->sample(iIndex).x()));
         QwtText oTxt;
@@ -925,6 +975,8 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
         oTxt.setColor(Qt::blue);
 
         ui->plotCurve->setTitle(oTxt);
+
+
     }
     else if(poCurve->style() == QwtPlotCurve::Sticks)
     {
@@ -936,6 +988,15 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
         qDebugV0()<<"buxiade s shme 玩不得~~~";
         ui->plotCurve->setTitle("");
     }
+}
+
+void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
+{
+    qDebugV0()<<"调整广域视电阻率，"<<poCurve->title().text()<<iIndex<<poCurve->sample(iIndex).x();
+
+    STATION oStation = gmapCurveStation.value(poCurve);
+
+    qDebugV0()<<oStation.oStrSiteId;
 }
 
 /* Scatter changed, then, curve's point need be change. */
@@ -954,8 +1015,6 @@ void MainWindow::markerMoved()
     {
         return;
     }
-
-    //gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
 
     QVector<qreal> arE;
     arE.clear();
@@ -1010,12 +1069,15 @@ void MainWindow::markerMoved()
 
     ui->plotScatter->setFooter(oTxt);
 
+    /* 手动摘除散点图的点,需要开放save按键,以便用户用于保存散点图更新信息致Rx类中 */
+    ui->actionSave->setEnabled(true);
+
     ui->plotCurve->replot();
 }
 
 /************************************************************************
  * Draw scatter points and Marker line
- *
+ * 两个地方调用此函数,1是选中点了 要画散点图,2是按了恢复至最初,这时要重新绘制散点图
  */
 void MainWindow::drawScatter()
 {
@@ -1093,6 +1155,16 @@ void MainWindow::drawScatter()
         ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterHide.png"));
         ui->plotScatter->show();
     }
+
+    /* 都已经挑数据了,还添加什么文件,先干啥去了~? */
+    ui->actionImportRX->setEnabled(false);
+
+    /*  */
+    ui->actionRecovery->setEnabled(true);
+
+    /* 发射端和接收端数据都来了,且双击选中了点,显示了 散点图,可以剪裁 */
+    ui->actionCutterH->setEnabled(true);
+    ui->actionCutterV->setEnabled(true);
 }
 
 void MainWindow::drawError()
@@ -1339,8 +1411,11 @@ void MainWindow::drawRx()
 }
 
 void MainWindow::initPlotRho()
-{
-    ui->plotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
+{    
+    CanvasPickerRho *poPicker = new CanvasPickerRho( ui->plotRho );
+
+    connect(poPicker, SIGNAL(SigSelectedRho(QwtPlotCurve*,int)), this, SLOT(SelectedRho(QwtPlotCurve*,int)));
+    //    ui->plotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
     QFont oFont("Times New Roman", 12, QFont::Thin);
@@ -1370,7 +1445,7 @@ void MainWindow::initPlotRho()
 
     /* Set Axis title */
     QwtText oTxtXAxisTitle( "F/Hz" );
-    QwtText oTxtYAxisTitle( "Rho" );
+    QwtText oTxtYAxisTitle( "Rho/\u03A9·m" );
     oTxtXAxisTitle.setFont( oFont );
     oTxtYAxisTitle.setFont( oFont );
 
@@ -1442,7 +1517,7 @@ void MainWindow::restoreCurve()
  * Insert 2 Horizontal Marker line
  *
  */
-void MainWindow::drawMarkerH()
+void MainWindow::on_actionCutterH_triggered()
 {
     /* No Scatter, Don't draw the Marker line! */
     if( gpoScatter == NULL )
@@ -1483,6 +1558,10 @@ void MainWindow::drawMarkerH()
 
     poCanvas->setCursor( Qt::SplitVCursor );
 
+    /* 选中了,那就不能让用户作死地点了 */
+    ui->actionCutterH->setEnabled(false);
+    ui->actionCutterV->setEnabled(true);
+
     ui->plotScatter->replot();
 }
 
@@ -1490,7 +1569,7 @@ void MainWindow::drawMarkerH()
  * Insert 2 Vertical Marker line
  *
  */
-void MainWindow::drawMarkerV()
+void MainWindow::on_actionCutterV_triggered()
 {
     /* No Scatter, Don't draw the Marker line! */
     if( gpoScatter == NULL )
@@ -1534,6 +1613,10 @@ void MainWindow::drawMarkerV()
     QwtPlotCanvas *poCanvas = qobject_cast<QwtPlotCanvas *>( ui->plotScatter->canvas() );
 
     poCanvas->setCursor( Qt::SplitHCursor );
+
+    /* 选中了,那就不能让用户作死地点了 */
+    ui->actionCutterV->setEnabled(false);
+    ui->actionCutterH->setEnabled(true);
 
     ui->plotScatter->replot();
 }
@@ -1688,7 +1771,7 @@ void MainWindow::initPlotTx()
 
     /* Set Axis title */
     QwtText oTxtXAxisTitle( "F/Hz" );
-    QwtText oTxtYAxisTitle( "I" );
+    QwtText oTxtYAxisTitle( "I/A" );
     oTxtXAxisTitle.setFont( oFont );
     oTxtYAxisTitle.setFont( oFont );
 
@@ -1781,7 +1864,6 @@ void MainWindow::on_actionRecovery_triggered()
 
     qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
 
-
     /* Read scatter from Sctatter table, then update curve && error Table */
     gpoSelectedRX->renewScatter(giSelectedIndex);
 
@@ -1793,6 +1875,9 @@ void MainWindow::on_actionRecovery_triggered()
 
     /* Draw error, get point from Error table */
     this->drawError();
+
+    /* 按了恢复键,要等下一次保存之后 再开启. */
+    ui->actionRecovery->setEnabled(false);
 }
 
 /* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */
@@ -1815,14 +1900,37 @@ void MainWindow::on_actionSave_triggered()
 
     RX *poRX = gmapCurveData.value(gpoSelectedCurve);
 
+    /* 当前认可修改,将修改结果写入到Rx类中 */
     poRX->updateScatter(giSelectedIndex, adY);
 
+    /* 修改,确认 存进了Rx类里面了,需要恢复,打开恢复按钮. */
+    ui->actionRecovery->setEnabled(true);
+
+    /* 此时有可能会使用到保存频率域数据到新的csv文档中. 手动操作了,删除了散点图中的点,有必要开启store按钮 */
+    if( !ui->actionStore->isEnabled())
+    {
+        ui->actionStore->setEnabled(true);
+    }
+
+    /* 频率域数据修改且认可了,那么就更新散点图 */
     gpoScatter->setSamples( aoPoint );
 
     this->resizeScaleScatter();
 
+    /* 保存完了, 置为disable状态 */
+    ui->actionSave->setEnabled(false);
+
     ui->plotScatter->replot();
 }
+
+
+/* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */
+void MainWindow::on_actionStore_triggered()
+{
+    qDebugV0()<<"中途保存  处理完了的结果` ";
+    this->store();
+}
+
 
 void MainWindow::on_actionCalRho_triggered()
 {
@@ -1845,21 +1953,24 @@ void MainWindow::on_actionCalRho_triggered()
 
     QList<STATION> aoStation = poDb->getStation();
 
+    /* 每条曲线一个thread，每个thread计算完毕了，会发射一个信号，main线程会draw Rho曲线 */
     foreach(STATION oStation, aoStation)
     {
         poCalRho->CalRho(oStation);
     }
 
-    ui->actionCalRho->setEnabled(false);
     //ui->actionClear->setEnabled(false);
-    ui->actionCutterH->setEnabled(false);
     ui->actionCutterH->setEnabled(false);
     ui->actionCutterV->setEnabled(false);
     ui->actionExportRho->setEnabled(true);
     ui->actionImportRX->setEnabled(false);
     ui->actionImportTX->setEnabled(false);
-    ui->actionRecovery->setEnabled(false);
+    ui->actionRecovery->setEnabled(true);
     ui->actionSave->setEnabled(false);
+
+    ui->actionCalRho->setEnabled(false);
+
+    gmapCurveStation.clear();
 }
 
 void MainWindow::showTableTX(QSqlTableModel *poModel)
@@ -1912,9 +2023,6 @@ void MainWindow::showTableRho(QSqlTableModel *poModel)
 
 void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> adRho)
 {
-    ui->plotRho->detachItems();
-    ui->plotRho->replot();
-
     QSet<double> setF;
 
     foreach(double dF, adF)
@@ -1959,6 +2067,8 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
 
     /* Create a curve pointer */
     QwtPlotCurve *poCurve = new QwtPlotCurve( oTxtTitle );
+
+    gmapCurveStation.insert(poCurve, oStation);
 
     poCurve->setPen( Qt::red, 2, Qt::SolidLine );
     poCurve->setRenderHint( QwtPlotItem::RenderAntialiased, true );

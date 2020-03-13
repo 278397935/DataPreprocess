@@ -17,20 +17,24 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    Picker/MarkerPicker.cpp \
     Mainwindow.cpp \
     Data/RX.cpp \
     Picker/CanvasPicker.cpp \
+    Picker/CanvasPickerRho.cpp \
+    Picker/MarkerPicker.cpp \
     CalRhoThread.cpp \
     MyDatabase.cpp
+
 HEADERS  += \
     Common/PublicDef.h \
-    Picker/MarkerPicker.h \
     Mainwindow.h \
     Data/RX.h \
     Picker/CanvasPicker.h \
+    Picker/CanvasPickerRho.h \
+    Picker/MarkerPicker.h \
     CalRhoThread.h \
     MyDatabase.h
+
 FORMS    += \
     Mainwindow.ui
 

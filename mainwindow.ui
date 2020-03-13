@@ -207,11 +207,12 @@
    <addaction name="actionImportRX"/>
    <addaction name="actionClear"/>
    <addaction name="separator"/>
-   <addaction name="separator"/>
    <addaction name="actionCutterH"/>
    <addaction name="actionCutterV"/>
    <addaction name="actionSave"/>
    <addaction name="actionRecovery"/>
+   <addaction name="separator"/>
+   <addaction name="actionStore"/>
    <addaction name="separator"/>
    <addaction name="actionCalRho"/>
    <addaction name="separator"/>
@@ -325,6 +326,18 @@
    </property>
    <property name="toolTip">
     <string>计算广域视电阻率</string>
+   </property>
+  </action>
+  <action name="actionStore">
+   <property name="icon">
+    <iconset resource="Res/Icon.qrc">
+     <normaloff>:/GDC2/Icon/store.png</normaloff>:/GDC2/Icon/store.png</iconset>
+   </property>
+   <property name="text">
+    <string>保存Rx频率域数据</string>
+   </property>
+   <property name="toolTip">
+    <string>保存Rx频率域数据</string>
    </property>
   </action>
  </widget>

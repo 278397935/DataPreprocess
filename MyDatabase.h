@@ -1,8 +1,6 @@
 #ifndef MYDATABASE_H
 #define MYDATABASE_H
 
-#include "Common/PublicDef.h"
-
 #include <QObject>
 
 #include <QFileDialog>
