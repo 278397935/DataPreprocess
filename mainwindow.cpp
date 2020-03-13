@@ -77,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionCutterH->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
     ui->actionCutterV->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_V));
 
+    /* 保存调整结果至Rx类，从csv文件中恢复过来。的快捷键 */
     ui->actionSave->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
     ui->actionRecovery->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
 
@@ -980,7 +981,7 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
         this->switchHighlightCurve();
         this->drawError();
 
-        QString oStrFooter(QString("%1 \u2708 频率:%2Hz")
+        QString oStrFooter(QString("%1 \u2708 %2Hz")
                            .arg(poCurve->title().text())
                            .arg(poCurve->data()->sample(iIndex).x()));
         QwtText oTxt;
@@ -1007,11 +1008,15 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
 
 void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
 {
-    qDebugV0()<<"调整广域视电阻率，"<<poCurve->title().text()<<iIndex<<poCurve->sample(iIndex).x();
+    qDebugV0()<<poCurve->title().text()<<iIndex<<poCurve->sample(iIndex).x();
 
-    STATION oStation = gmapCurveStation.value(poCurve);
+    //STATION oStation = gmapCurveStation.value(poCurve);
 
-    qDebugV0()<<oStation.oStrSiteId;
+    QMap<QwtPlotCurve*, STATION>::const_iterator it;
+    for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
+    {
+        qDebugV0()<<it.key()->title().text()<<it.value().oStrLineId;//
+    }
 }
 
 /* Scatter changed, then, curve's point need be change. */
@@ -1221,7 +1226,7 @@ void MainWindow::drawError()
     QMap<double, double>::const_iterator it;
     for(it = poRX->mapErr.constBegin(); it!= poRX->mapErr.constEnd(); ++it)
     {
-       pointFList.append(QPointF(it.key(), it.value()));
+        pointFList.append(QPointF(it.key(), it.value()));
     }
 
     gpoErrorCurve->setSamples( pointFList );
@@ -1538,7 +1543,7 @@ void MainWindow::restoreCurve()
         QMap<double, double>::const_iterator it;
         for(it = poRX->mapErr.constBegin(); it!= poRX->mapErr.constEnd(); ++it)
         {
-           pointFList.append(QPointF(it.key(), it.value()));
+            pointFList.append(QPointF(it.key(), it.value()));
         }
 
         gpoErrorCurve->setSamples( pointFList );
@@ -1901,7 +1906,7 @@ void MainWindow::on_actionRecovery_triggered()
     qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
 
     /* Read scatter from Sctatter table, then update curve && error Table */
-    gpoSelectedRX->renewScatter(giSelectedIndex);
+    gpoSelectedRX->renewScatter(gpoSelectedCurve->sample(giSelectedIndex).x());
 
     /* Draw scatter(Point from scatter) */
     this->drawScatter();
@@ -1989,6 +1994,8 @@ void MainWindow::on_actionCalRho_triggered()
 
     QList<STATION> aoStation = poDb->getStation();
 
+    gmapCurveStation.clear();
+
     /* 每条曲线一个thread，每个thread计算完毕了，会发射一个信号，main线程会draw Rho曲线 */
     foreach(STATION oStation, aoStation)
     {
@@ -2005,8 +2012,6 @@ void MainWindow::on_actionCalRho_triggered()
     ui->actionSave->setEnabled(false);
 
     ui->actionCalRho->setEnabled(false);
-
-    gmapCurveStation.clear();
 }
 
 void MainWindow::showTableTX(QSqlTableModel *poModel)

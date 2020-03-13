@@ -57,7 +57,7 @@ bool CanvasPicker::eventFilter( QObject *object, QEvent *event )
         QApplication::postEvent( this, new QEvent( QEvent::User ) );
         break;
     }
-    case QEvent::MouseButtonDblClick:
+    case QEvent::MouseButtonPress:
     {
         const QMouseEvent *mouseEvent = static_cast<QMouseEvent *>( event );
         select( mouseEvent->pos() );

@@ -41,7 +41,8 @@ public:
 
     void importRX(QString oStrFileName);
 
-    void renewScatter(int iIndex );
+    /* 工具选定的频率，更新Rx类中的变量。原来是工具index来检索，有一定的耦合性，所以改过来了。 */
+    void renewScatter(double dF);
 
     double getAvg(QVector<double> adData);
 

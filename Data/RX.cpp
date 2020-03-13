@@ -110,7 +110,7 @@ void RX::importRX(QString oStrFileName)
 }
 
 /* 刷新散点图，同时，平均值和相对均方误差也应该对应刷新。 */
-void RX::renewScatter(int iIndex)
+void RX::renewScatter(double dF)
 {
     qDebugV0()<<oStrCSV;
     /*  */
@@ -125,40 +125,46 @@ void RX::renewScatter(int iIndex)
         oStream.seek(0);
 
         QStringList aoStrLineCSV;
+        aoStrLineCSV.clear();
 
         QString oStrLineCSV;
-
-        for(int i = 0; i < iIndex; i++)
-        {
-            oStream.readLine();
-        }
         oStrLineCSV.clear();
 
-        oStrLineCSV = oStream.readLine();
-
-        if(!oStrLineCSV.isEmpty())
+        while(!oStream.atEnd())
         {
-            aoStrLineCSV.clear();
+            oStrLineCSV = oStream.readLine();
 
-            aoStrLineCSV = oStrLineCSV.split(',', QString::SkipEmptyParts);
-
-            double dF = aoStrLineCSV.first().toDouble();
-
-            aoStrLineCSV.removeFirst();
-
-            QVector<double> adData;
-            adData.clear();
-
-            foreach(QString oStrData, aoStrLineCSV)
+            if(!oStrLineCSV.isEmpty())
             {
-                adData.append(oStrData.toDouble());
+                aoStrLineCSV.clear();
+
+                aoStrLineCSV = oStrLineCSV.split(',', QString::SkipEmptyParts);
+
+                double dCurrentLineF = aoStrLineCSV.first().toDouble();
+
+                if(dCurrentLineF == dF)
+                {
+                    aoStrLineCSV.removeFirst();
+
+                    QVector<double> adScatter;
+                    adScatter.clear();
+
+                    foreach(QString oStrData, aoStrLineCSV)
+                    {
+                        adScatter.append(oStrData.toDouble());
+                    }
+
+                    mapScatterList.insert(dF, adScatter);
+
+                    mapAvg.insert(dF, getAvg(adScatter));
+
+                    mapErr.insert(dF, getErr(adScatter));
+                }
+                else
+                {
+                    break;
+                }
             }
-
-            mapScatterList.insert(dF, adData);//  aadScatter[iIndex] = adData;
-
-            mapAvg.insert(dF, getAvg(adData));//  adE[iIndex] = getE(adData);
-
-            mapErr.insert(dF, getErr(adData));//  adErr[iIndex] = getErr(adData);
         }
     }
 
