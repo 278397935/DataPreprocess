@@ -83,19 +83,21 @@ void RX::importRX(QString oStrFileName)
                 /* 读取到了频率之后，在QStringList中删除掉 */
                 aoStrLineCSV.removeFirst();
 
-                QVector<double> adData;
-                adData.clear();
+                QVector<double> adScatter;
+                adScatter.clear();
 
                 foreach(QString oStrData, aoStrLineCSV)
                 {
-                    adData.append(oStrData.toDouble());
+                    adScatter.append(oStrData.toDouble());
                 }
 
-                map_F_Scatter.insert(dF, adData);
+                adF.append(dF);
 
-                adE.append(getE(adData));
+                mapScatterList.insert(dF, adScatter);
 
-                adErr.append(getErr(adData));
+                mapAvg.insert(dF, getAvg(adScatter));
+
+                mapErr.insert(dF, getErr(adScatter));
             }
             else
             {
@@ -152,11 +154,11 @@ void RX::renewScatter(int iIndex)
                 adData.append(oStrData.toDouble());
             }
 
-            map_F_Scatter.insert(dF, adData);// aadScatter[iIndex] = adData;
+            mapScatterList.insert(dF, adData);//  aadScatter[iIndex] = adData;
 
-            adE[iIndex] = getE(adData);
+            mapAvg.insert(dF, getAvg(adData));//  adE[iIndex] = getE(adData);
 
-            adErr[iIndex] = getErr(adData);
+            mapErr.insert(dF, getErr(adData));//  adErr[iIndex] = getErr(adData);
         }
     }
 
@@ -164,7 +166,7 @@ void RX::renewScatter(int iIndex)
 }
 
 /* 计算场值平均值 */
-double RX::getE(QVector<double> adData)
+double RX::getAvg(QVector<double> adData)
 {
     double dAverage = 0;
     double dSum = 0;
@@ -188,7 +190,7 @@ double RX::getErr(QVector<double> adData)
     double dError = 0;
 
     double dAvg = 0;
-    dAvg = this->getE(adData);
+    dAvg = this->getAvg(adData);
 
     double dTemp = 0 ;
 
@@ -209,9 +211,9 @@ double RX::getErr(QVector<double> adData)
  */
 void RX::updateScatter(double dF, QVector<double> adScatter)
 {
-    map_F_Scatter.insert(dF, adScatter);
+    mapScatterList.insert(dF, adScatter);
 
-    adE[dF] = this->getE(adScatter);
+    mapAvg.insert(dF, this->getAvg(adScatter));//adE[dF] = this->getE(adScatter);
 
-    adErr[dF] = this->getErr(adScatter);
+    mapErr.insert(dF, this->getErr(adScatter));// adErr[dF] = this->getErr(adScatter);
 }

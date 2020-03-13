@@ -210,26 +210,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(poCalRho, SIGNAL(SigRho(STATION, QVector<double>, QVector<double>)), this, SLOT(drawRho(STATION, QVector<double>, QVector<double>)));
 
     aoStrExisting.clear();
-
-
-    QMap<int, double> map;
-
-    map.insert(1,1.01);
-    map.insert(2,2.02);
-
-    QMap<int , double>::const_iterator it;
-
-    for(it = map.begin(); it!=map.end();++it)
-    {
-        qDebugV0() << it.key() << ":" << it.value();
-    }
-    map.insert(2,  3.14);
-
-
-    for(it = map.begin(); it!=map.end();++it)
-    {
-        qDebugV0() << it.key() << ":" << it.value();
-    }
 }
 
 MainWindow::~MainWindow()
@@ -365,8 +345,10 @@ void MainWindow::on_actionClear_triggered()
 
         ui->stackedWidget->setCurrentIndex(0);
 
-        QVector<double> xData;xData.clear();
-        QVector<double> yData;yData.clear();
+        QVector<double> xData;
+        xData.clear();
+        QVector<double> yData;
+        yData.clear();
 
         gpoScatter->setSamples(xData, yData);
 
@@ -443,9 +425,12 @@ void MainWindow::showMsg(QString oStrMsg)
 
 void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
 {
-    QVector<double> adR = this->getR(gpoSelectedRX->adF, gpoSelectedRX->adE);
+    QPolygonF pointList;
+    pointList.clear();
 
-    poCurve->setSamples(gpoSelectedRX->adF, adR);
+    pointList = this->getR(gpoSelectedRX->mapAvg);
+
+    poCurve->setSamples(pointList);
 
     ui->plotCurve->replot();
 }
@@ -477,9 +462,9 @@ void MainWindow::store()
 
         QTextStream out(&file);
 
-        foreach (double dF, poRx->map_F_Scatter.keys())
+        foreach (double dF, poRx->mapScatterList.keys())
         {
-            foreach(double dScatter,  poRx->map_F_Scatter.value(dF))
+            foreach(double dScatter,  poRx->mapScatterList.value(dF))
             {
                 out<<dScatter<<",";
             }
@@ -528,9 +513,9 @@ void MainWindow::drawCurve()
 
     foreach(RX *poRX, gapoRX)
     {
-        for(int i = 0; i < poRX->adF.count(); i++)
+        foreach(double dF, poRX->adF)
         {
-            setF.insert(poRX->adF.at(i));
+            setF.insert(dF);
         }
     }
 
@@ -549,7 +534,7 @@ void MainWindow::drawCurve()
 
     ui->plotCurve->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
 
-    foreach (RX* poRX, gapoRX)
+    foreach(RX* poRX, gapoRX)
     {
         /* Curve title, cut MCSD_ & suffix*/
         const QwtText oTxtTitle( QString(tr("线号:%1__点号:%2__仪器号:%3__通道号:%4(%5)"))
@@ -573,9 +558,11 @@ void MainWindow::drawCurve()
         poCurve->setSymbol( poSymbol );
         poCurve->setStyle(QwtPlotCurve::Lines);
 
-        QVector<double> adR = this->getR( poRX->adF, poRX->adE);
+        QPolygonF pointFList;
+        pointFList.clear();
+        pointFList = this->getR( poRX->mapAvg);
 
-        poCurve->setSamples( poRX->adF, adR );
+        poCurve->setSamples( pointFList );
         poCurve->setAxes(QwtPlot::xBottom, QwtPlot::yLeft);
         poCurve->attach(ui->plotCurve);
         poCurve->setVisible( true );
@@ -628,17 +615,26 @@ void MainWindow::resizeScaleScatter()
 }
 
 /* 电压除以电流，得到电阻值。实际上就是用电流来归一化电压 */
-QVector<double> MainWindow::getR(QVector<double> adF, QVector<double> adE)
+QPolygonF MainWindow::getR(QMap<double, double> oMap)
 {
-    QVector<double> adR;
-    adR.clear();
+    QPolygonF pointList;
+    pointList.clear();
 
-    for(int i = 0; i < adF.count(); i++)
+    QMap<double, double>::const_iterator it;
+
+    for(it = oMap.constBegin(); it != oMap.constEnd(); ++it)
     {
-        adR.append( adE.at(i)/poDb->getI(adF.at(i)) );
+        double dI = poDb->getI(it.key());
+
+        QPointF pointF;
+
+        pointF.setX(it.key());
+        pointF.setY(it.value()/dI);
+
+        pointList.append(pointF);
     }
 
-    return adR;
+    return pointList;
 }
 
 /******************************************************************************
@@ -1043,7 +1039,7 @@ void MainWindow::markerMoved()
         arE.append(apoPointScatter.at(i).y());
     }
 
-    double dE = gpoSelectedRX->getE(arE);
+    double dE = gpoSelectedRX->getAvg(arE);
 
     double dI = poDb->getI(gpoSelectedCurve->data()->sample(giSelectedIndex).x());
 
@@ -1137,7 +1133,7 @@ void MainWindow::drawScatter()
 
     RX *poRxSelected = gmapCurveData.value(gpoSelectedCurve);
 
-    QVector<double> adScatter = poRxSelected->map_F_Scatter.value(gpoSelectedCurve->sample(giSelectedIndex).x());
+    QVector<double> adScatter = poRxSelected->mapScatterList.value(gpoSelectedCurve->sample(giSelectedIndex).x());
     QVector<double> adX;
     adX.clear();
 
@@ -1160,7 +1156,8 @@ void MainWindow::drawScatter()
 
     /* Read Excel file(copy), display MSRE on PlotCurve canvas(Top||Right) */
     /* Display MSRE on footer */
-    QString oStrFooter(QString("相对均方误差: %1%").arg( poRxSelected->adErr.at(giSelectedIndex) ));
+    QString oStrFooter(QString("相对均方误差: %1%")
+                       .arg( poRxSelected->mapErr.value(gpoSelectedCurve->sample(giSelectedIndex).x()) ));
     QwtText oTxt;
     QFont oFont("Times New Roman", 12, QFont::Thin);
     oTxt.setFont(oFont);
@@ -1219,7 +1216,15 @@ void MainWindow::drawError()
 
     RX *poRX = gmapCurveData.value(gpoSelectedCurve);
 
-    gpoErrorCurve->setSamples( poRX->adF, poRX->adErr );
+    QPolygonF pointFList;
+    pointFList.clear();
+    QMap<double, double>::const_iterator it;
+    for(it = poRX->mapErr.constBegin(); it!= poRX->mapErr.constEnd(); ++it)
+    {
+       pointFList.append(QPointF(it.key(), it.value()));
+    }
+
+    gpoErrorCurve->setSamples( pointFList );
     gpoErrorCurve->attach( ui->plotCurve );
 
 
@@ -1410,9 +1415,11 @@ void MainWindow::drawRx()
         poCurve->setSymbol( poSymbol );
         poCurve->setStyle(QwtPlotCurve::Lines);
 
-        QVector<double> adR = this->getR( poRX->adF, poRX->adE);
+        QPolygonF pointFlist;
+        pointFlist.clear();
+        pointFlist = this->getR( poRX->mapAvg);
 
-        poCurve->setSamples( poRX->adF, adR );
+        poCurve->setSamples( pointFlist );
         poCurve->setAxes(QwtPlot::xBottom, QwtPlot::yLeft);
         poCurve->attach(ui->plotRx);
         poCurve->setVisible( true );
@@ -1513,9 +1520,11 @@ void MainWindow::restoreCurve()
 
     if( gpoSelectedCurve != NULL)
     {
-        QVector<double> adR = this->getR(poRX->adF, poRX->adE);
+        QPolygonF pointFList;
+        pointFList.clear();
+        pointFList = this->getR( poRX->mapAvg);
 
-        gpoSelectedCurve->setSamples( poRX->adF, adR );
+        gpoSelectedCurve->setSamples( pointFList );
 
         ui->plotCurve->setTitle("");
 
@@ -1524,7 +1533,15 @@ void MainWindow::restoreCurve()
 
     if( gpoErrorCurve != NULL )
     {
-        gpoErrorCurve->setSamples( poRX->adF, poRX->adErr  );
+        QPolygonF pointFList;
+        pointFList.clear();
+        QMap<double, double>::const_iterator it;
+        for(it = poRX->mapErr.constBegin(); it!= poRX->mapErr.constEnd(); ++it)
+        {
+           pointFList.append(QPointF(it.key(), it.value()));
+        }
+
+        gpoErrorCurve->setSamples( pointFList );
 
         ui->plotScatter->setFooter("");
 

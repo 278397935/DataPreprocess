@@ -112,7 +112,7 @@ private:
     /* Real time set plot canvas Scale & Set aside blank. */
     void resizeScaleScatter();
 
-    QVector<double> getR(QVector<double> adF, QVector<double> adE);
+    QPolygonF getR(QMap<double, double> oMap);
 
     /* Read last Dir log file, get last Dir(Previous directory) */
     QString LastDirRead();

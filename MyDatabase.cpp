@@ -113,7 +113,7 @@ void MyDatabase::importRX(QVector<RX*> apoRX)
 
     foreach(RX *poRX, apoRX)
     {
-        for(int i = 0; i < poRX->adF.count(); i++)
+        foreach(double dF, poRX->adF)
         {
             /* LineID, SiteID, DevID, DevCH, CompTag, F, Amplitude, Phase */
             if( !oQuery.exec(QString("INSERT INTO RX VALUES('%1', '%2', %3, %4, '%5', %6, %7, %8, %9)")
@@ -122,10 +122,10 @@ void MyDatabase::importRX(QVector<RX*> apoRX)
                              .arg(poRX->giDevId)
                              .arg(poRX->giDevCh)
                              .arg(poRX->goStrCompTag)
-                             .arg(poRX->adF.at(i))
-                             .arg(this->getI(poRX->adF.at(i)))
-                             .arg(poRX->adE.at(i))
-                             .arg(poRX->adErr.at(i))))
+                             .arg(dF)
+                             .arg(this->getI(dF))
+                             .arg(poRX->mapAvg.value(dF))
+                             .arg(poRX->mapErr.value(dF))))
             {
                 qDebugV5()<<oQuery.lastError().text();
             }
