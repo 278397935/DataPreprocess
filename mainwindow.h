@@ -87,6 +87,9 @@ private:
 
     RX *gpoSelectedRX;
 
+
+
+
     //QwtPlotTextLabel *gpoErrorTextLabel;
 
     /* marker lines list */

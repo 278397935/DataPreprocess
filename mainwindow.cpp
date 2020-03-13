@@ -992,7 +992,6 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
 
         ui->plotCurve->setTitle(oTxt);
 
-
     }
     else if(poCurve->style() == QwtPlotCurve::Sticks)
     {
@@ -1010,13 +1009,14 @@ void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
 {
     qDebugV0()<<poCurve->title().text()<<iIndex<<poCurve->sample(iIndex).x();
 
-    //STATION oStation = gmapCurveStation.value(poCurve);
-
     QMap<QwtPlotCurve*, STATION>::const_iterator it;
     for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
     {
         qDebugV0()<<it.key()->title().text()<<it.value().oStrLineId;//
     }
+
+    gpoSelectedCurve = poCurve;
+    giSelectedIndex = iIndex;
 }
 
 /* Scatter changed, then, curve's point need be change. */
@@ -1442,7 +1442,7 @@ void MainWindow::drawRx()
 }
 
 void MainWindow::initPlotRho()
-{    
+{
     CanvasPickerRho *poPicker = new CanvasPickerRho( ui->plotRho );
 
     connect(poPicker, SIGNAL(SigSelectedRho(QwtPlotCurve*,int)), this, SLOT(SelectedRho(QwtPlotCurve*,int)));
@@ -1897,28 +1897,55 @@ void MainWindow::on_actionExportRho_triggered()
  */
 void MainWindow::on_actionRecovery_triggered()
 {
-    if( gpoSelectedCurve == NULL || giSelectedIndex == -1)
+    switch (ui->stackedWidget->currentIndex())
     {
-        this->showMsg("未选中曲线上的点！");
-        return;
+    case 0:
+    {
+        if( gpoSelectedCurve == NULL || giSelectedIndex == -1)
+        {
+            this->showMsg("未选中曲线上的点！");
+            return;
+        }
+
+        qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
+
+        /* Read scatter from Sctatter table, then update curve && error Table */
+        gpoSelectedRX->renewScatter(gpoSelectedCurve->sample(giSelectedIndex).x());
+
+        /* Draw scatter(Point from scatter) */
+        this->drawScatter();
+
+        /* Get points from curve table, replace current curve's points, repplote. */
+        this->recoveryCurve(gpoSelectedCurve);
+
+        /* Draw error, get point from Error table */
+        this->drawError();
+
+        /* 按了恢复键,要等下一次保存之后 再开启. */
+        ui->actionRecovery->setEnabled(false);
     }
+        break;
 
-    qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
+    case 1:
+    {
+        STATION oStation = gmapCurveStation.value(gpoSelectedCurve);
 
-    /* Read scatter from Sctatter table, then update curve && error Table */
-    gpoSelectedRX->renewScatter(gpoSelectedCurve->sample(giSelectedIndex).x());
+        double dF = gpoSelectedCurve->sample(giSelectedIndex).x();
 
-    /* Draw scatter(Point from scatter) */
-    this->drawScatter();
+        double dRho = poDb->getRho(oStation, dF);
 
-    /* Get points from curve table, replace current curve's points, repplote. */
-    this->recoveryCurve(gpoSelectedCurve);
+        QPolygonF pointlList = this->currentCurvePoints();
 
-    /* Draw error, get point from Error table */
-    this->drawError();
+        pointlList.replace(giSelectedIndex, QPointF(dF, dRho));
 
-    /* 按了恢复键,要等下一次保存之后 再开启. */
-    ui->actionRecovery->setEnabled(false);
+        gpoSelectedCurve->setSamples(pointlList);
+
+        ui->plotRho->replot();
+    }
+        break;
+    default:
+        break;
+    }
 }
 
 /* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */

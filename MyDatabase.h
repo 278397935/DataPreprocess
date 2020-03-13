@@ -76,6 +76,8 @@ public:
 
     QList<STATION> getStation();
 
+    double getRho(STATION oStation, double dF);
+
     QSqlDatabase *poDb;
 
 signals:    

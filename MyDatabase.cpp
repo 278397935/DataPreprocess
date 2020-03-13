@@ -505,3 +505,28 @@ QList<STATION> MyDatabase::getStation()
     return aoStation;
 }
 
+double MyDatabase::getRho(STATION oStation, double dF)
+{
+    double dRho = 0;
+
+    QSqlQuery oQuery(*poDb);
+
+    if( !oQuery.exec(QString("Select Rho from Rho Where LineId = '%1' and SiteId = '%2' and "
+                             "DevId = %3 and DevCh = %4 and F = %5 ")
+                     .arg(oStation.oStrLineId)
+                     .arg(oStation.oStrSiteId)
+                     .arg(oStation.iDevId)
+                     .arg(oStation.iDevCh)
+                     .arg(dF)))
+
+    {
+        qDebugV5()<<oQuery.lastError().text();
+    }
+    if(oQuery.first())
+    {
+        dRho = oQuery.value("Rho").toDouble();
+    }
+
+    return dRho;
+}
+
