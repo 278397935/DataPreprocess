@@ -78,7 +78,7 @@ void RX::importRX(QString oStrFileName)
 
                 aoStrLineCSV = oStrLineCSV.split(',', QString::SkipEmptyParts);
 
-                adF.append(aoStrLineCSV.first().toDouble());
+                double dF = aoStrLineCSV.first().toDouble();
 
                 /* 读取到了频率之后，在QStringList中删除掉 */
                 aoStrLineCSV.removeFirst();
@@ -91,7 +91,7 @@ void RX::importRX(QString oStrFileName)
                     adData.append(oStrData.toDouble());
                 }
 
-                aadScatter.append(adData);
+                map_F_Scatter.insert(dF, adData);
 
                 adE.append(getE(adData));
 
@@ -140,7 +140,7 @@ void RX::renewScatter(int iIndex)
 
             aoStrLineCSV = oStrLineCSV.split(',', QString::SkipEmptyParts);
 
-            //            qDebugV0()<< aoStrLineCSV.first().toDouble();
+            double dF = aoStrLineCSV.first().toDouble();
 
             aoStrLineCSV.removeFirst();
 
@@ -152,7 +152,7 @@ void RX::renewScatter(int iIndex)
                 adData.append(oStrData.toDouble());
             }
 
-            aadScatter[iIndex] = adData;
+            map_F_Scatter.insert(dF, adData);// aadScatter[iIndex] = adData;
 
             adE[iIndex] = getE(adData);
 
@@ -207,13 +207,11 @@ double RX::getErr(QVector<double> adData)
  * 2：Update E(Field value)
  * 3：Update Error
  */
-void RX::updateScatter(int iIndex, QVector<double> adScatter)
+void RX::updateScatter(double dF, QVector<double> adScatter)
 {
-    aadScatter[iIndex].clear();
+    map_F_Scatter.insert(dF, adScatter);
 
-    aadScatter[iIndex] = adScatter;
+    adE[dF] = this->getE(adScatter);
 
-    adE[iIndex] = this->getE(adScatter);
-
-    adErr[iIndex] = this->getErr(adScatter);
+    adErr[dF] = this->getErr(adScatter);
 }

@@ -210,6 +210,26 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(poCalRho, SIGNAL(SigRho(STATION, QVector<double>, QVector<double>)), this, SLOT(drawRho(STATION, QVector<double>, QVector<double>)));
 
     aoStrExisting.clear();
+
+
+    QMap<int, double> map;
+
+    map.insert(1,1.01);
+    map.insert(2,2.02);
+
+    QMap<int , double>::const_iterator it;
+
+    for(it = map.begin(); it!=map.end();++it)
+    {
+        qDebugV0() << it.key() << ":" << it.value();
+    }
+    map.insert(2,  3.14);
+
+
+    for(it = map.begin(); it!=map.end();++it)
+    {
+        qDebugV0() << it.key() << ":" << it.value();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -456,11 +476,10 @@ void MainWindow::store()
         }
 
         QTextStream out(&file);
-        for(int i = 0; i < poRx->adF.count(); i++)
-        {
-            out<<poRx->adF.at(i)<<",";
 
-            foreach (double dScatter, poRx->aadScatter.at(i))
+        foreach (double dF, poRx->map_F_Scatter.keys())
+        {
+            foreach(double dScatter,  poRx->map_F_Scatter.value(dF))
             {
                 out<<dScatter<<",";
             }
@@ -1118,7 +1137,7 @@ void MainWindow::drawScatter()
 
     RX *poRxSelected = gmapCurveData.value(gpoSelectedCurve);
 
-    QVector<double> adScatter = poRxSelected->aadScatter.at(giSelectedIndex);
+    QVector<double> adScatter = poRxSelected->map_F_Scatter.value(gpoSelectedCurve->sample(giSelectedIndex).x());
     QVector<double> adX;
     adX.clear();
 
@@ -1901,7 +1920,7 @@ void MainWindow::on_actionSave_triggered()
     RX *poRX = gmapCurveData.value(gpoSelectedCurve);
 
     /* 当前认可修改,将修改结果写入到Rx类中 */
-    poRX->updateScatter(giSelectedIndex, adY);
+    poRX->updateScatter(gpoSelectedCurve->sample( giSelectedIndex).x(), adY );
 
     /* 修改,确认 存进了Rx类里面了,需要恢复,打开恢复按钮. */
     ui->actionRecovery->setEnabled(true);

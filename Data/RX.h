@@ -24,9 +24,12 @@ public:
     /* csv 文件名 */
     QString oStrCSV;
 
-    QVector<QVector<double> > aadScatter;
+    //QVector<QVector<double> > aadScatter;
+    QMap<double, QVector<double> > map_F_Scatter;
 
-    QVector<double> adF, adE, adErr;
+    QVector<double> adF;
+    QVector<double> adE;
+    QVector<double> adErr;
 
     QString goStrLineId, goStrSiteId;
 
@@ -42,7 +45,7 @@ public:
 
     double getErr(QVector<double> adData);
 
-    void updateScatter(int iIndex, QVector<double> adScatter);
+    void updateScatter(double dF, QVector<double> adScatter);
 
 signals:
 
