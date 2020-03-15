@@ -419,19 +419,19 @@ void MainWindow::on_actionClear_triggered()
 /* 显示提示信息，QMessage自动定时关闭。 */
 void MainWindow::showMsg(QString oStrMsg)
 {
-    QMessageBox *poMsgBox = new QMessageBox(QMessageBox::Information,tr("友情提示"),oStrMsg);
+    QMessageBox *poMsgBox = new QMessageBox(QMessageBox::Information,tr("提示(5秒自动关闭)"),oStrMsg);
     QTimer::singleShot(5000, poMsgBox, SLOT(accept())); //也可将accept改为close
     poMsgBox->exec();//box->show();都可以
 }
 
 void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
 {
-    QPolygonF pointList;
-    pointList.clear();
+    QPolygonF aoPointF;
+    aoPointF.clear();
 
-    pointList = this->getR(gpoSelectedRX->mapAvg);
+    aoPointF = this->getR(gpoSelectedRX->mapAvg);
 
-    poCurve->setSamples(pointList);
+    poCurve->setSamples(aoPointF);
 
     ui->plotCurve->replot();
 }
@@ -559,11 +559,11 @@ void MainWindow::drawCurve()
         poCurve->setSymbol( poSymbol );
         poCurve->setStyle(QwtPlotCurve::Lines);
 
-        QPolygonF pointFList;
-        pointFList.clear();
-        pointFList = this->getR( poRX->mapAvg);
+        QPolygonF aoPointF;
+        aoPointF.clear();
+        aoPointF = this->getR( poRX->mapAvg);
 
-        poCurve->setSamples( pointFList );
+        poCurve->setSamples( aoPointF );
         poCurve->setAxes(QwtPlot::xBottom, QwtPlot::yLeft);
         poCurve->attach(ui->plotCurve);
         poCurve->setVisible( true );
@@ -618,8 +618,8 @@ void MainWindow::resizeScaleScatter()
 /* 电压除以电流，得到电阻值。实际上就是用电流来归一化电压 */
 QPolygonF MainWindow::getR(QMap<double, double> oMap)
 {
-    QPolygonF pointList;
-    pointList.clear();
+    QPolygonF aoPointF;
+    aoPointF.clear();
 
     QMap<double, double>::const_iterator it;
 
@@ -627,15 +627,15 @@ QPolygonF MainWindow::getR(QMap<double, double> oMap)
     {
         double dI = poDb->getI(it.key());
 
-        QPointF pointF;
+        QPointF oPointF;
 
-        pointF.setX(it.key());
-        pointF.setY(it.value()/dI);
+        oPointF.setX(it.key());
+        oPointF.setY(it.value()/dI);
 
-        pointList.append(pointF);
+        aoPointF.append(oPointF);
     }
 
-    return pointList;
+    return aoPointF;
 }
 
 /******************************************************************************
@@ -687,18 +687,18 @@ QPolygonF MainWindow::currentScatterPoints()
 
 QPolygonF MainWindow::currentCurvePoints()
 {
-    QPolygonF aoPoint;
-    aoPoint.clear();
+    QPolygonF aoPointF;
+    aoPointF.clear();
 
     if(gpoSelectedCurve != NULL)
     {
         for(uint i = 0; i < gpoSelectedCurve->dataSize(); i++)
         {
-            aoPoint.append(gpoSelectedCurve->sample(i));
+            aoPointF.append(gpoSelectedCurve->sample(i));
         }
     }
 
-    return aoPoint;
+    return aoPointF;
 }
 
 /**************************************************
@@ -1221,15 +1221,15 @@ void MainWindow::drawError()
 
     RX *poRX = gmapCurveData.value(gpoSelectedCurve);
 
-    QPolygonF pointFList;
-    pointFList.clear();
+    QPolygonF aoPointF;
+    aoPointF.clear();
     QMap<double, double>::const_iterator it;
     for(it = poRX->mapErr.constBegin(); it!= poRX->mapErr.constEnd(); ++it)
     {
-        pointFList.append(QPointF(it.key(), it.value()));
+        aoPointF.append(QPointF(it.key(), it.value()));
     }
 
-    gpoErrorCurve->setSamples( pointFList );
+    gpoErrorCurve->setSamples( aoPointF );
     gpoErrorCurve->attach( ui->plotCurve );
 
 
@@ -1420,11 +1420,11 @@ void MainWindow::drawRx()
         poCurve->setSymbol( poSymbol );
         poCurve->setStyle(QwtPlotCurve::Lines);
 
-        QPolygonF pointFlist;
-        pointFlist.clear();
-        pointFlist = this->getR( poRX->mapAvg);
+        QPolygonF aoPointF;
+        aoPointF.clear();
+        aoPointF = this->getR( poRX->mapAvg);
 
-        poCurve->setSamples( pointFlist );
+        poCurve->setSamples( aoPointF );
         poCurve->setAxes(QwtPlot::xBottom, QwtPlot::yLeft);
         poCurve->attach(ui->plotRx);
         poCurve->setVisible( true );
@@ -1525,11 +1525,11 @@ void MainWindow::restoreCurve()
 
     if( gpoSelectedCurve != NULL)
     {
-        QPolygonF pointFList;
-        pointFList.clear();
-        pointFList = this->getR( poRX->mapAvg);
+        QPolygonF aoPointF;
+        aoPointF.clear();
+        aoPointF = this->getR( poRX->mapAvg);
 
-        gpoSelectedCurve->setSamples( pointFList );
+        gpoSelectedCurve->setSamples( aoPointF );
 
         ui->plotCurve->setTitle("");
 
@@ -1538,15 +1538,15 @@ void MainWindow::restoreCurve()
 
     if( gpoErrorCurve != NULL )
     {
-        QPolygonF pointFList;
-        pointFList.clear();
+        QPolygonF aoPointF;
+        aoPointF.clear();
         QMap<double, double>::const_iterator it;
         for(it = poRX->mapErr.constBegin(); it!= poRX->mapErr.constEnd(); ++it)
         {
-            pointFList.append(QPointF(it.key(), it.value()));
+            aoPointF.append(QPointF(it.key(), it.value()));
         }
 
-        gpoErrorCurve->setSamples( pointFList );
+        gpoErrorCurve->setSamples( aoPointF );
 
         ui->plotScatter->setFooter("");
 
@@ -1899,7 +1899,7 @@ void MainWindow::on_actionRecovery_triggered()
 {
     switch (ui->stackedWidget->currentIndex())
     {
-    case 0:
+    case 0://场值除以电流的曲线（场值调整plot）
     {
         if( gpoSelectedCurve == NULL || giSelectedIndex == -1)
         {
@@ -1926,7 +1926,7 @@ void MainWindow::on_actionRecovery_triggered()
     }
         break;
 
-    case 1:
+    case 1://广域视电阻率的曲线（视电阻率手动任意拖动 plot）
     {
         STATION oStation = gmapCurveStation.value(gpoSelectedCurve);
 
@@ -1934,11 +1934,12 @@ void MainWindow::on_actionRecovery_triggered()
 
         double dRho = poDb->getRho(oStation, dF);
 
-        QPolygonF pointlList = this->currentCurvePoints();
+        QPolygonF aoPointF = this->currentCurvePoints();
 
-        pointlList.replace(giSelectedIndex, QPointF(dF, dRho));
+        /* Rho的中间结果以QwtPlotCurve为载体存放 */
+        aoPointF.replace(giSelectedIndex, QPointF(dF, dRho));
 
-        gpoSelectedCurve->setSamples(pointlList);
+        gpoSelectedCurve->setSamples(aoPointF);
 
         ui->plotRho->replot();
     }
@@ -1951,46 +1952,75 @@ void MainWindow::on_actionRecovery_triggered()
 /* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */
 void MainWindow::on_actionSave_triggered()
 {
-    QPolygonF aoPoint = this->currentScatterPoints();
-
-    if( aoPoint.count() == 0)
+    switch (ui->stackedWidget->currentIndex())
     {
-        return;
+    case 0://场值除以电流的曲线（场值调整plot）
+    {
+        QPolygonF aoPointF = this->currentScatterPoints();
+
+        if( aoPointF.count() == 0)
+        {
+            return;
+        }
+
+        QVector<double> adY;
+        adY.clear();
+
+        for(qint32 i = 0; i < aoPointF.count(); i++)
+        {
+            adY.append(aoPointF.at(i).y());
+        }
+
+        RX *poRX = gmapCurveData.value(gpoSelectedCurve);
+
+        /* 当前认可修改,将修改结果写入到Rx类中 */
+        poRX->updateScatter(gpoSelectedCurve->sample( giSelectedIndex).x(), adY );
+
+        /* 修改,确认 存进了Rx类里面了,需要恢复,打开恢复按钮. */
+        ui->actionRecovery->setEnabled(true);
+
+        /* 此时有可能会使用到保存频率域数据到新的csv文档中. 手动操作了,删除了散点图中的点,有必要开启store按钮 */
+        if( !ui->actionStore->isEnabled())
+        {
+            ui->actionStore->setEnabled(true);
+        }
+
+        /* 频率域数据修改且认可了,那么就更新散点图 */
+        gpoScatter->setSamples( aoPointF );
+
+        this->resizeScaleScatter();
+
+        /* 保存完了, 置为disable状态 */
+        ui->actionSave->setEnabled(false);
+
+        ui->plotScatter->replot();
     }
 
-    QVector<double> adY;
-    adY.clear();
-
-    for(qint32 i = 0; i < aoPoint.count(); i++)
+        break;
+    case 1://广域视电阻率的曲线（视电阻率手动任意拖动 plot）
     {
-        adY.append(aoPoint.at(i).y());
+        /* 保存Rho曲线上的数据至数据库，以便导出数据库数据到csv文档。再调整广域视电阻率时，何时去点这个保存按钮？*/
+        QMap<QwtPlotCurve*, STATION>::const_iterator it;
+        for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
+        {
+            qDebugV0()<<it.key()->title().text()<<it.value().oStrLineId;//
+
+            QPolygonF aoPointF;
+            aoPointF.clear();
+
+            for(uint i = 0; i < it.key()->dataSize(); i++)
+            {
+                aoPointF.append(gpoSelectedCurve->sample(i));
+            }
+
+            poDb->modifyRho(it.value(), aoPointF);
+        }
     }
-
-    RX *poRX = gmapCurveData.value(gpoSelectedCurve);
-
-    /* 当前认可修改,将修改结果写入到Rx类中 */
-    poRX->updateScatter(gpoSelectedCurve->sample( giSelectedIndex).x(), adY );
-
-    /* 修改,确认 存进了Rx类里面了,需要恢复,打开恢复按钮. */
-    ui->actionRecovery->setEnabled(true);
-
-    /* 此时有可能会使用到保存频率域数据到新的csv文档中. 手动操作了,删除了散点图中的点,有必要开启store按钮 */
-    if( !ui->actionStore->isEnabled())
-    {
-        ui->actionStore->setEnabled(true);
+        break;
+    default:
+        break;
     }
-
-    /* 频率域数据修改且认可了,那么就更新散点图 */
-    gpoScatter->setSamples( aoPoint );
-
-    this->resizeScaleScatter();
-
-    /* 保存完了, 置为disable状态 */
-    ui->actionSave->setEnabled(false);
-
-    ui->plotScatter->replot();
 }
-
 
 /* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */
 void MainWindow::on_actionStore_triggered()
@@ -2035,8 +2065,9 @@ void MainWindow::on_actionCalRho_triggered()
     ui->actionExportRho->setEnabled(true);
     ui->actionImportRX->setEnabled(false);
     ui->actionImportTX->setEnabled(false);
+
     ui->actionRecovery->setEnabled(true);
-    ui->actionSave->setEnabled(false);
+    ui->actionSave->setEnabled(true);
 
     ui->actionCalRho->setEnabled(false);
 }
@@ -2086,7 +2117,8 @@ void MainWindow::showTableRho(QSqlTableModel *poModel)
 
     ui->tableViewRho->repaint();
 
-    ui->tabWidget->setCurrentIndex(3);
+    if(ui->tabWidget->currentIndex() !=4)
+        ui->tabWidget->setCurrentIndex(3);
 }
 
 void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> adRho)

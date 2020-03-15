@@ -505,6 +505,10 @@ QList<STATION> MyDatabase::getStation()
     return aoStation;
 }
 
+/* 指定线（根据station来找），指定频点（F）来找到根据场值电流和坐标计算出来的视电阻率值
+ * 这个值相对于手动任意拖动调整来说，就是最原始的依据了。
+ * 觉得这个依据都不合适，那就重新调整频率域的场值，再计算获得广域视电阻率。
+ */
 double MyDatabase::getRho(STATION oStation, double dF)
 {
     double dRho = 0;
@@ -530,3 +534,61 @@ double MyDatabase::getRho(STATION oStation, double dF)
     return dRho;
 }
 
+void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)
+{
+    QSqlQuery oQuery(*poDb);
+
+    poDb->transaction();
+
+    foreach(QPointF oPoint, aoPointF)
+    {
+        /* LineID, SiteID, DevID, DevCH, CompTag, F, I, Field, Rho */
+        if( !oQuery.exec(QString("Update Rho Set Rho = %1 Where "
+                                 "LineId = '%2' and SiteId = '%3' and "
+                                 "DevId  = %4   and DevCh  = %5   and "
+                                 "F = %6 ")
+                         .arg(oPoint.y())
+                         .arg(oStation.oStrLineId)
+                         .arg(oStation.oStrSiteId)
+                         .arg(oStation.iDevId)
+                         .arg(oStation.iDevCh)
+                         .arg(oPoint.x())))
+
+        {
+            qDebugV5()<<oQuery.lastError().text();
+        }
+    }
+
+    poDb->commit();
+
+    QSqlTableModel *poModel = new QSqlTableModel(this, *poDb);
+    poModel->setTable("Rho");
+    poModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    poModel->setHeaderData(0, Qt::Horizontal, QStringLiteral("线号"));
+    poModel->setHeaderData(1, Qt::Horizontal, QStringLiteral("点号"));
+    poModel->setHeaderData(2, Qt::Horizontal, QStringLiteral("仪器号"));
+    poModel->setHeaderData(3, Qt::Horizontal, QStringLiteral("通道号"));
+    poModel->setHeaderData(4, Qt::Horizontal, QStringLiteral("分量标识"));
+
+    poModel->setHeaderData(5, Qt::Horizontal, QStringLiteral("频率"));
+    poModel->setHeaderData(6, Qt::Horizontal, QStringLiteral("电流"));
+    poModel->setHeaderData(7, Qt::Horizontal, QStringLiteral("场值"));
+    poModel->setHeaderData(8, Qt::Horizontal, QStringLiteral("相对均方误差"));
+    poModel->setHeaderData(9, Qt::Horizontal, QStringLiteral("视电阻率"));
+
+    poModel->setHeaderData(10, Qt::Horizontal, QStringLiteral("AX"));
+    poModel->setHeaderData(11, Qt::Horizontal, QStringLiteral("AY"));
+    poModel->setHeaderData(12, Qt::Horizontal, QStringLiteral("AH"));
+    poModel->setHeaderData(13, Qt::Horizontal, QStringLiteral("BX"));
+    poModel->setHeaderData(14, Qt::Horizontal, QStringLiteral("BY"));
+    poModel->setHeaderData(15, Qt::Horizontal, QStringLiteral("BH"));
+    poModel->setHeaderData(16, Qt::Horizontal, QStringLiteral("MX"));
+    poModel->setHeaderData(17, Qt::Horizontal, QStringLiteral("MY"));
+    poModel->setHeaderData(18, Qt::Horizontal, QStringLiteral("MH"));
+    poModel->setHeaderData(19, Qt::Horizontal, QStringLiteral("NX"));
+    poModel->setHeaderData(20, Qt::Horizontal, QStringLiteral("NY"));
+    poModel->setHeaderData(21, Qt::Horizontal, QStringLiteral("NH"));
+    poModel->select();
+
+    emit SigModelRho(poModel);
+}
