@@ -218,6 +218,7 @@
    <addaction name="separator"/>
    <addaction name="actionExportRho"/>
    <addaction name="separator"/>
+   <addaction name="actionReadme"/>
    <addaction name="actionClose"/>
   </widget>
   <action name="actionImportTX">
@@ -338,6 +339,18 @@
    </property>
    <property name="toolTip">
     <string>保存Rx频率域数据</string>
+   </property>
+  </action>
+  <action name="actionReadme">
+   <property name="icon">
+    <iconset resource="Res/Icon.qrc">
+     <normaloff>:/GDC2/Icon/readme.ico</normaloff>:/GDC2/Icon/readme.ico</iconset>
+   </property>
+   <property name="text">
+    <string>说明文档</string>
+   </property>
+   <property name="toolTip">
+    <string>说明文档</string>
    </property>
   </action>
  </widget>

@@ -30,6 +30,10 @@
 #include "MyDatabase.h"
 
 
+#include <QDesktopServices>
+#include <QUrl>
+
+
 /* Marker line list */
 typedef struct _MARKER_LIST
 {
@@ -176,6 +180,8 @@ private slots:
 
     /* Insert Horizontal Marker line */
     void on_actionCutterH_triggered();
+
+    void on_actionReadme_triggered();
 
 public slots:
     /* Draw Curve */

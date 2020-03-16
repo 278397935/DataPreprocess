@@ -31,5 +31,6 @@
         <file>clear.png</file>
         <file>horse.ico</file>
         <file>store.png</file>
+        <file>readme.ico</file>
     </qresource>
 </RCC>

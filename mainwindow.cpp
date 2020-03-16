@@ -445,10 +445,11 @@ void MainWindow::store()
 
         QString oStrFileName = poRx->oStrCSV;
         oStrFileName.chop(4);
-        qDebugV0()<<oStrFileName;
+        //        qDebugV0()<<oStrFileName;
 
         oStrFileName.append(QString("_filter_%1.csv")
-                            .arg(QDateTime::currentDateTime().toString("yyyy年MM月dd日_hh时mm分ss秒")));
+                            .arg(QDateTime::currentDateTime()
+                                 .toString("yyyy年MM月dd日_hh时mm分ss秒")));
 
 
         qDebugV0()<<oStrFileName;
@@ -1007,18 +1008,12 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
 
 void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
 {
-    //qDebugV0()<<poCurve->title().text()<<iIndex<<poCurve->sample(iIndex).x();
-
-//    QMap<QwtPlotCurve*, STATION>::const_iterator it;
-//    for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
-//    {
-//        qDebugV0()<<it.key()->title().text()<<it.value().oStrLineId;//
-//    }
-
     if(poCurve != NULL && iIndex != -1)
     {
         gpoSelectedCurve = poCurve;
         giSelectedIndex = iIndex;
+
+        ui->actionStore->setEnabled(true);
     }
 }
 
@@ -1537,7 +1532,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
             aoPointF = poDb->getRho(oStation);
 
-            qDebugV0()<<aoPointF;
+            //qDebugV0()<<aoPointF;
 
             gpoSelectedCurve->setSamples(aoPointF);
 
@@ -1883,6 +1878,29 @@ void MainWindow::initPlotTx()
 /* 导出广域视电阻率计算结果到csv文档。 */
 void MainWindow::on_actionExportRho_triggered()
 {
+    QMessageBox oMsgBoxClose(QMessageBox::Question, "保存修改", "是否按当前呈现的广域视电阻率曲线形态导出结果？",
+                             QMessageBox::Yes | QMessageBox::No, NULL);
+
+    if(oMsgBoxClose.exec() == QMessageBox::Yes)
+    {
+        /* 保存Rho曲线上的数据至数据库，以便导出数据库数据到csv文档。再调整广域视电阻率时，何时去点这个保存按钮？*/
+        QMap<QwtPlotCurve*, STATION>::const_iterator it;
+        for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
+        {
+            QPolygonF aoPointF;
+            aoPointF.clear();
+
+            for(uint i = 0; i < it.key()->dataSize(); i++)
+            {
+                qDebugV0()<<it.key()->sample(i);
+                aoPointF.append(it.key()->sample(i));
+            }
+
+            poDb->modifyRho(it.value(), aoPointF);
+        }
+    }
+
+    /* 不管回写还是不回写，都要导出 */
     QString oStrDefault = QDateTime::currentDateTime().toString("yyyy年MM月dd日HH时mm分ss秒_广域视电阻率结果");
 
     QString oStrFileName = QFileDialog::getSaveFileName(this, tr("保存广域视电阻率计算结果"),
@@ -1983,79 +2001,49 @@ void MainWindow::on_actionRecovery_triggered()
 /* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */
 void MainWindow::on_actionSave_triggered()
 {
-    switch (ui->stackedWidget->currentIndex())
+    QPolygonF aoPointF = this->currentScatterPoints();
+
+    if( aoPointF.count() == 0)
     {
-    case 0://场值除以电流的曲线（场值调整plot）
+        return;
+    }
+
+    QVector<double> adY;
+    adY.clear();
+
+    for(qint32 i = 0; i < aoPointF.count(); i++)
     {
-        QPolygonF aoPointF = this->currentScatterPoints();
-
-        if( aoPointF.count() == 0)
-        {
-            return;
-        }
-
-        QVector<double> adY;
-        adY.clear();
-
-        for(qint32 i = 0; i < aoPointF.count(); i++)
-        {
-            adY.append(aoPointF.at(i).y());
-        }
-
-        RX *poRX = gmapCurveData.value(gpoSelectedCurve);
-
-        /* 当前认可修改,将修改结果写入到Rx类中 */
-        poRX->updateScatter(gpoSelectedCurve->sample( giSelectedIndex).x(), adY );
-
-        /* 修改,确认 存进了Rx类里面了,需要恢复,打开恢复按钮. */
-        ui->actionRecovery->setEnabled(true);
-
-        /* 此时有可能会使用到保存频率域数据到新的csv文档中. 手动操作了,删除了散点图中的点,有必要开启store按钮 */
-        if( !ui->actionStore->isEnabled())
-        {
-            ui->actionStore->setEnabled(true);
-        }
-
-        /* 频率域数据修改且认可了,那么就更新散点图 */
-        gpoScatter->setSamples( aoPointF );
-
-        this->resizeScaleScatter();
-
-        /* 保存完了, 置为disable状态 */
-        ui->actionSave->setEnabled(false);
-
-        ui->plotScatter->replot();
+        adY.append(aoPointF.at(i).y());
     }
-        break;
-    case 1://广域视电阻率的曲线（视电阻率手动任意拖动 plot）
+
+    RX *poRX = gmapCurveData.value(gpoSelectedCurve);
+
+    /* 当前认可修改,将修改结果写入到Rx类中 */
+    poRX->updateScatter(gpoSelectedCurve->sample( giSelectedIndex).x(), adY );
+
+    /* 修改,确认 存进了Rx类里面了,需要恢复,打开恢复按钮. */
+    ui->actionRecovery->setEnabled(true);
+
+    /* 此时有可能会使用到保存频率域数据到新的csv文档中. 手动操作了,删除了散点图中的点,有必要开启store按钮 */
+    if( !ui->actionStore->isEnabled())
     {
-        /* 保存Rho曲线上的数据至数据库，以便导出数据库数据到csv文档。再调整广域视电阻率时，何时去点这个保存按钮？*/
-        QMap<QwtPlotCurve*, STATION>::const_iterator it;
-        for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
-        {
-            qDebugV0()<<it.key()->title().text()<<it.value().oStrLineId;//
-
-            QPolygonF aoPointF;
-            aoPointF.clear();
-
-            for(uint i = 0; i < it.key()->dataSize(); i++)
-            {
-                aoPointF.append(gpoSelectedCurve->sample(i));
-            }
-
-            poDb->modifyRho(it.value(), aoPointF);
-        }
+        ui->actionStore->setEnabled(true);
     }
-        break;
-    default:
-        break;
-    }
+
+    /* 频率域数据修改且认可了,那么就更新散点图 */
+    gpoScatter->setSamples( aoPointF );
+
+    this->resizeScaleScatter();
+
+    ui->plotScatter->replot();
+
+    /* 保存完了, 置为disable状态 */
+    ui->actionSave->setEnabled(false);
 }
 
 /* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */
 void MainWindow::on_actionStore_triggered()
 {
-    qDebugV0()<<"中途保存  处理完了的结果` ";
     this->store();
 }
 
@@ -2098,10 +2086,10 @@ void MainWindow::on_actionCalRho_triggered()
 
     ui->actionRecovery->setEnabled(true);
 
-    /* 没必要保存，数据都是暂存在curve上 */
     ui->actionSave->setEnabled(false);
+    ui->actionStore->setEnabled(false);
 
-    ui->actionCalRho->setEnabled(false);
+    ui->actionCalRho->setEnabled(true);
 }
 
 void MainWindow::showTableTX(QSqlTableModel *poModel)
@@ -2147,7 +2135,8 @@ void MainWindow::showTableRho(QSqlTableModel *poModel)
 {
     ui->tableViewRho->setModel(poModel);
 
-    ui->tableViewRho->repaint();
+    /* 这里要update，因为导出表格时的依据就是前表格的model */
+    ui->tableViewRho->update();
 
     if(ui->tabWidget->currentIndex() !=4)
         ui->tabWidget->setCurrentIndex(3);
@@ -2218,4 +2207,13 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
     poCurve->setVisible( true );
 
     ui->plotRho->replot();
+}
+
+void MainWindow::on_actionReadme_triggered()
+{
+    QString qexeFullPath = QCoreApplication::applicationDirPath();
+
+    qexeFullPath.append("//readme.pdf");
+
+    QDesktopServices::openUrl(QUrl::fromLocalFile(qexeFullPath));
 }

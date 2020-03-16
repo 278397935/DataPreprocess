@@ -570,7 +570,11 @@ QPolygonF MyDatabase::getRho(STATION oStation)
 
 void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)
 {
+    qDebugV0()<<oStation.oStrLineId<<oStation.oStrSiteId<<oStation.iDevId<<oStation.iDevCh<<aoPointF;
+
     QSqlQuery oQuery(*poDb);
+
+    qDebugV0()<<oStation.oStrLineId<<oStation.oStrSiteId<<oStation.iDevId<<oStation.iDevCh;
 
     poDb->transaction();
 
