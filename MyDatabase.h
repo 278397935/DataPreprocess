@@ -76,8 +76,11 @@ public:
 
     QList<STATION> getStation();
 
-    /* 从数据库里面读取广域视电阻率值 */
+    /* 从数据库里面读取指定线&&指定点的广域视电阻率值 */
     double getRho(STATION oStation, double dF);
+
+    /* 从数据库里面读取指定线的广域视电阻率值 */
+    QPolygonF getRho(STATION oStation);
 
     /* 人为拖动Rho曲线上的点，将呈现的值写进数据库中。*/
     void modifyRho(STATION oStation, QPolygonF aoPointF);

@@ -508,6 +508,8 @@ QList<STATION> MyDatabase::getStation()
 /* 指定线（根据station来找），指定频点（F）来找到根据场值电流和坐标计算出来的视电阻率值
  * 这个值相对于手动任意拖动调整来说，就是最原始的依据了。
  * 觉得这个依据都不合适，那就重新调整频率域的场值，再计算获得广域视电阻率。
+ *
+ * 从数据库里面读取指定线&&指定点的广域视电阻率值
  */
 double MyDatabase::getRho(STATION oStation, double dF)
 {
@@ -532,6 +534,38 @@ double MyDatabase::getRho(STATION oStation, double dF)
     }
 
     return dRho;
+}
+
+/* 从数据库里面读取指定线的广域视电阻率值 */
+QPolygonF MyDatabase::getRho(STATION oStation)
+{
+    QPolygonF aoPointF;
+    aoPointF.clear();
+
+    QPointF oPointF;
+
+    QSqlQuery oQuery(*poDb);
+
+    if( !oQuery.exec(QString("Select F, Rho From Rho Where "
+                             "LineId = '%1' and SiteId = '%2' and "
+                             "DevId  = %3   and DevCh  = %4")
+                     .arg(oStation.oStrLineId)
+                     .arg(oStation.oStrSiteId)
+                     .arg(oStation.iDevId)
+                     .arg(oStation.iDevCh)))
+
+    {
+        qDebugV5()<<oQuery.lastError().text();
+    }
+    while(oQuery.next())
+    {
+        oPointF.setX(oQuery.value("F").toDouble());
+        oPointF.setY(oQuery.value("Rho").toDouble());
+
+        aoPointF.append(oPointF);
+    }
+
+    return aoPointF;
 }
 
 void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)

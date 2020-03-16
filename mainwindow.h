@@ -138,6 +138,9 @@ private:
 
     QMap<QwtPlotCurve*, STATION> gmapCurveStation;
 
+    /*"Shift + Ctrl + R",恢复选中的Rho整条曲线 */
+    void keyPressEvent(QKeyEvent *event);
+
 private slots:
     void on_actionImportTX_triggered();
     void on_actionImportRX_triggered();

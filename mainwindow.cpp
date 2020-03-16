@@ -1007,16 +1007,19 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
 
 void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
 {
-    qDebugV0()<<poCurve->title().text()<<iIndex<<poCurve->sample(iIndex).x();
+    //qDebugV0()<<poCurve->title().text()<<iIndex<<poCurve->sample(iIndex).x();
 
-    QMap<QwtPlotCurve*, STATION>::const_iterator it;
-    for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
+//    QMap<QwtPlotCurve*, STATION>::const_iterator it;
+//    for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
+//    {
+//        qDebugV0()<<it.key()->title().text()<<it.value().oStrLineId;//
+//    }
+
+    if(poCurve != NULL && iIndex != -1)
     {
-        qDebugV0()<<it.key()->title().text()<<it.value().oStrLineId;//
+        gpoSelectedCurve = poCurve;
+        giSelectedIndex = iIndex;
     }
-
-    gpoSelectedCurve = poCurve;
-    giSelectedIndex = iIndex;
 }
 
 /* Scatter changed, then, curve's point need be change. */
@@ -1515,6 +1518,34 @@ void MainWindow::initPlotRho()
     ui->plotRho->setAutoReplot(true);
 }
 
+/*"Shift + Ctrl + R",恢复选中的Rho整条曲线 */
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (event->modifiers() == (Qt::ShiftModifier | Qt::ControlModifier) &&
+            event->key() == Qt::Key_R)
+    {
+        qDebugV0()<<"Shift + Ctrl + R";
+
+        if(gpoSelectedCurve != NULL)
+        {
+            qDebugV0()<<gpoSelectedCurve->title().text();
+
+            STATION oStation = gmapCurveStation.value(gpoSelectedCurve);
+
+            QPolygonF aoPointF;
+            aoPointF.clear();
+
+            aoPointF = poDb->getRho(oStation);
+
+            qDebugV0()<<aoPointF;
+
+            gpoSelectedCurve->setSamples(aoPointF);
+
+            ui->plotRho->replot();
+        }
+    }
+}
+
 /*****************************************************************************
  * Restore Curve when release this point or curve.
  *
@@ -1925,8 +1956,8 @@ void MainWindow::on_actionRecovery_triggered()
         ui->actionRecovery->setEnabled(false);
     }
         break;
-
-    case 1://广域视电阻率的曲线（视电阻率手动任意拖动 plot）
+        /* 广域视电阻率的曲线(视电阻率手动任意拖动 plot)，点击恢复键，则恢复选中点（单个点） */
+    case 1:
     {
         STATION oStation = gmapCurveStation.value(gpoSelectedCurve);
 
@@ -1995,7 +2026,6 @@ void MainWindow::on_actionSave_triggered()
 
         ui->plotScatter->replot();
     }
-
         break;
     case 1://广域视电阻率的曲线（视电阻率手动任意拖动 plot）
     {
@@ -2067,7 +2097,9 @@ void MainWindow::on_actionCalRho_triggered()
     ui->actionImportTX->setEnabled(false);
 
     ui->actionRecovery->setEnabled(true);
-    ui->actionSave->setEnabled(true);
+
+    /* 没必要保存，数据都是暂存在curve上 */
+    ui->actionSave->setEnabled(false);
 
     ui->actionCalRho->setEnabled(false);
 }
