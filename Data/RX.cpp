@@ -112,7 +112,6 @@ void RX::importRX(QString oStrFileName)
 /* 刷新散点图，同时，平均值和相对均方误差也应该对应刷新。 */
 void RX::renewScatter(double dF)
 {
-    qDebugV0()<<oStrCSV;
     /*  */
     QFile oFile(oStrCSV);
     QString oStrLineCSV;
@@ -154,14 +153,15 @@ void RX::renewScatter(double dF)
                         adScatter.append(oStrData.toDouble());
                     }
 
+                    mapScatterList.remove(dF);
                     mapScatterList.insert(dF, adScatter);
 
+                    mapAvg.remove(dF);
                     mapAvg.insert(dF, getAvg(adScatter));
 
+                    mapErr.remove(dF);
                     mapErr.insert(dF, getErr(adScatter));
-                }
-                else
-                {
+
                     break;
                 }
             }
@@ -217,9 +217,12 @@ double RX::getErr(QVector<double> adData)
  */
 void RX::updateScatter(double dF, QVector<double> adScatter)
 {
+    mapScatterList.remove(dF);
     mapScatterList.insert(dF, adScatter);
 
+    mapAvg.remove(dF);
     mapAvg.insert(dF, this->getAvg(adScatter));//adE[dF] = this->getE(adScatter);
 
+    mapErr.remove(dF);
     mapErr.insert(dF, this->getErr(adScatter));// adErr[dF] = this->getErr(adScatter);
 }

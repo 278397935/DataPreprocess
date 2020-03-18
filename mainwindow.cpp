@@ -500,6 +500,7 @@ void MainWindow::drawCurve()
             poItem == NULL;
         }
     }
+
     gmapCurveItem.clear();
 
     ui->plotCurve->detachItems();
@@ -548,7 +549,7 @@ void MainWindow::drawCurve()
         QwtPlotCurve *poCurve = NULL;
         poCurve = new QwtPlotCurve( oTxtTitle );
 
-        poCurve->setPen( Qt::black, 2, Qt::SolidLine );
+        poCurve->setPen( Qt::red, 2, Qt::SolidLine );
         poCurve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
 
         QwtSymbol *poSymbol = new QwtSymbol( QwtSymbol::Ellipse,
@@ -1136,6 +1137,7 @@ void MainWindow::drawScatter()
     RX *poRxSelected = gmapCurveData.value(gpoSelectedCurve);
 
     QVector<double> adScatter = poRxSelected->mapScatterList.value(gpoSelectedCurve->sample(giSelectedIndex).x());
+
     QVector<double> adX;
     adX.clear();
 
@@ -1957,8 +1959,6 @@ void MainWindow::on_actionRecovery_triggered()
             return;
         }
 
-        qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
-
         /* Read scatter from Sctatter table, then update curve && error Table */
         gpoSelectedRX->renewScatter(gpoSelectedCurve->sample(giSelectedIndex).x());
 
@@ -1978,6 +1978,8 @@ void MainWindow::on_actionRecovery_triggered()
         /* 广域视电阻率的曲线(视电阻率手动任意拖动 plot)，点击恢复键，则恢复选中点（单个点） */
     case 1:
     {
+        qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
+
         STATION oStation = gmapCurveStation.value(gpoSelectedCurve);
 
         double dF = gpoSelectedCurve->sample(giSelectedIndex).x();

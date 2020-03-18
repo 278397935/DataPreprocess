@@ -22,6 +22,10 @@ private:
     QwtPlot *plot();
     const QwtPlot *plot() const;
 
+    void release();
+
+    void showCursor( bool enable );
+
     QwtPlotCurve *d_selectedCurve;
     int d_selectedPoint;
 

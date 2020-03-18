@@ -42,6 +42,12 @@ const QwtPlot *CanvasPicker::plot() const
 
 bool CanvasPicker::event( QEvent *ev )
 {
+    if ( ev->type() == QEvent::User )
+    {
+        showCursor( true );
+        return true;
+    }
+
     return QObject::event( ev );
 }
 
@@ -52,6 +58,16 @@ bool CanvasPicker::eventFilter( QObject *object, QEvent *event )
 
     switch( event->type() )
     {
+    case QEvent::FocusIn:
+    {
+        showCursor( true );
+        break;
+    }
+    case QEvent::FocusOut:
+    {
+        showCursor( false );
+        break;
+    }
     case QEvent::Paint:
     {
         QApplication::postEvent( this, new QEvent( QEvent::User ) );
@@ -100,6 +116,8 @@ void CanvasPicker::select( const QPoint &pos )
         }
     }
 
+    showCursor( false );
+
     d_selectedCurve = NULL;
     d_selectedPoint = -1;
 
@@ -108,6 +126,33 @@ void CanvasPicker::select( const QPoint &pos )
         d_selectedCurve = curve;
         d_selectedPoint = index;
 
+        showCursor( true );
+
         emit SigSelected(d_selectedCurve, d_selectedPoint);
     }
+}
+
+// Hightlight the selected point
+void CanvasPicker::showCursor( bool showIt )
+{
+    if ( !d_selectedCurve )
+        return;
+
+    if(d_selectedCurve->style()==QwtPlotCurve::Sticks)
+        return;
+
+    //qDebug()<<d_selectedCurve->title().text()<<d_selectedPoint;
+
+    QwtSymbol *symbol = const_cast<QwtSymbol *>( d_selectedCurve->symbol() );
+
+    const QBrush brush = symbol->brush();
+
+    if ( showIt )
+        symbol->setBrush( symbol->brush().color().dark( 180 ) );
+
+    QwtPlotDirectPainter directPainter;
+    directPainter.drawSeries( d_selectedCurve, d_selectedPoint, d_selectedPoint );
+
+    if ( showIt )
+        symbol->setBrush( brush ); // reset brush
 }
