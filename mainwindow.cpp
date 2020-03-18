@@ -445,12 +445,8 @@ void MainWindow::store()
 
         QString oStrFileName = poRx->oStrCSV;
         oStrFileName.chop(4);
-        //        qDebugV0()<<oStrFileName;
 
-        oStrFileName.append(QString("_filter_%1.csv")
-                            .arg(QDateTime::currentDateTime()
-                                 .toString("yyyy年MM月dd日_hh时mm分ss秒")));
-
+        oStrFileName.append("_filtered.csv");
 
         qDebugV0()<<oStrFileName;
 
@@ -466,6 +462,8 @@ void MainWindow::store()
 
         foreach (double dF, poRx->mapScatterList.keys())
         {
+            out<<dF<<",";
+
             foreach(double dScatter,  poRx->mapScatterList.value(dF))
             {
                 out<<dScatter<<",";
@@ -991,18 +989,18 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
         oTxt.setFont(oFont);
         oTxt.setColor(Qt::blue);
 
-        ui->plotCurve->setTitle(oTxt);
+        ui->plotCurve->setFooter(oTxt);
 
     }
     else if(poCurve->style() == QwtPlotCurve::Sticks)
     {
-        qDebugV0()<<"相对均方误差   quxian玩不得~~~";
-        ui->plotCurve->setTitle("");
+        // qDebugV0()<<"相对均方误差   quxian玩不得~~~";
+        ui->plotCurve->setFooter("");
     }
     else
     {
-        qDebugV0()<<"buxiade s shme 玩不得~~~";
-        ui->plotCurve->setTitle("");
+        // qDebugV0()<<"buxiade s shme 玩不得~~~";
+        ui->plotCurve->setFooter("");
     }
 }
 
@@ -1076,7 +1074,8 @@ void MainWindow::markerMoved()
     gpoErrorCurve->setSamples( aoPointFError );
 
     /* Update MSRE */
-    QString oStrFooter(QString("相对均方误差: %1%").arg(gpoSelectedRX->getErr(arE)));
+    QString oStrFooter(QString("相对均方误差: %1%")
+                       .arg(QString::number(gpoSelectedRX->getErr(arE),'f',2)));
 
     QwtText oTxt;
     QFont oFont("Times New Roman", 12, QFont::Thin);
@@ -1158,9 +1157,11 @@ void MainWindow::drawScatter()
     this->resizeScaleScatter();
 
     /* Read Excel file(copy), display MSRE on PlotCurve canvas(Top||Right) */
+
+    //QString::number(gpoSelectedRX->getErr(arE),'f',2)
     /* Display MSRE on footer */
     QString oStrFooter(QString("相对均方误差: %1%")
-                       .arg( poRxSelected->mapErr.value(gpoSelectedCurve->sample(giSelectedIndex).x()) ));
+                       .arg( QString::number(poRxSelected->mapErr.value(gpoSelectedCurve->sample(giSelectedIndex).x()),'f',2) ));
     QwtText oTxt;
     QFont oFont("Times New Roman", 12, QFont::Thin);
     oTxt.setFont(oFont);
@@ -2142,6 +2143,7 @@ void MainWindow::showTableRho(QSqlTableModel *poModel)
         ui->tabWidget->setCurrentIndex(3);
 }
 
+/* 画广域视电阻率曲线图，是按了计算Rho按钮，然后计算，计算完了发信号过来， */
 void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> adRho)
 {
     QSet<double> setF;
@@ -2155,7 +2157,7 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
 
     qSort(listF);
 
-    qDebugV0()<<listF;
+    //    qDebugV0()<<listF;
 
     /* Fill ticks */
     QList<double> adTicks[QwtScaleDiv::NTickTypes];
@@ -2163,20 +2165,12 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
     QwtScaleDiv oScaleDiv( adTicks[QwtScaleDiv::MajorTick].last(), adTicks[QwtScaleDiv::MajorTick].first(), adTicks );
 
     //QwtScaleDiv (double lowerBound, double upperBound, QList< double >[NTickTypes])
-    qDebugV0()<<ui->plotRho->axisScaleDiv(QwtPlot::xBottom).lowerBound()
-             <<adTicks[QwtScaleDiv::MajorTick].last()
-            <<ui->plotRho->axisScaleDiv(QwtPlot::xBottom).upperBound()
-           <<adTicks[QwtScaleDiv::MajorTick].first();
+    //    qDebugV0()<<ui->plotRho->axisScaleDiv(QwtPlot::xBottom).lowerBound()
+    //             <<adTicks[QwtScaleDiv::MajorTick].last()
+    //            <<ui->plotRho->axisScaleDiv(QwtPlot::xBottom).upperBound()
+    //           <<adTicks[QwtScaleDiv::MajorTick].first();
 
-    if( ui->plotRho->axisScaleDiv(QwtPlot::xBottom).lowerBound() == adTicks[QwtScaleDiv::MajorTick].last() ||
-            ui->plotRho->axisScaleDiv(QwtPlot::xBottom).upperBound() == adTicks[QwtScaleDiv::MajorTick].first() )
-    {
-        qDebugV0()<<"==";
-    }
-    {
-        ui->plotRho->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
-    }
-
+    ui->plotRho->setAxisScaleDiv( QwtPlot::xBottom, oScaleDiv );
 
     /* Curve title, cut MCSD_ & suffix*/
     const QwtText oTxtTitle( QString("L%1-%2_D%3-%4_%5")

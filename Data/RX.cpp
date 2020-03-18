@@ -23,7 +23,7 @@ void RX::importRX(QString oStrFileName)
 
     //qDebugV0()<<oStrTemp;
 
-    /* 读取文件名里面的信息，摘取线号点号仪器号通道号~ */
+    /* 读取文件名里面的信息，摘取线号点号仪器号通道号 */
     QStringList aoStrStationInfo = oStrTemp.split('_', QString::SkipEmptyParts );
 
     //qDebugV0()<<aoStrStationInfo;

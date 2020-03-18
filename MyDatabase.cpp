@@ -252,8 +252,8 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
                          .arg(oRhoResult.dF)
                          .arg(oRhoResult.dI)
                          .arg(oRhoResult.dField)
-                         .arg(QString("%1%").arg(QString::number(oRhoResult.dErr, 10, 3)))
-                         .arg(oRhoResult.dRho)
+                         .arg(QString("%1%").arg(QString::number(oRhoResult.dErr, 'f', 2)))
+                         .arg(QString::number(oRhoResult.dRho, 'f',4))
                          .arg(QString::number(oRhoResult.oAB.dMX, 10, FloatPrecision))
                          .arg(QString::number(oRhoResult.oAB.dMY, 10, FloatPrecision))
                          .arg(QString::number(oRhoResult.oAB.dMZ, 10, FloatPrecision))
@@ -354,7 +354,7 @@ double MyDatabase::getI(double dF)
     }
     else
     {
-        emit SigMsg(QString("未找到频点%1Hz的电流值！/n请确认。").arg(dF));
+        emit SigMsg(QString("未找到频点%1Hz的电流值！\n请确认。").arg(dF));
     }
 
     return dI;
