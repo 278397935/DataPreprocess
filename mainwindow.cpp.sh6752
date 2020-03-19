@@ -98,15 +98,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     poMarkerPicker = NULL;
 
-    poPickerCurve = NULL;
-
-    poPickerRho = NULL;
+    poCurvePicker = NULL;
 
     poDb = NULL;
 
     /* Init poCurvePicker */
-    poPickerCurve = new CanvasPicker( ui->plotCurve );
-    connect(poPickerCurve, SIGNAL(SigSelected(QwtPlotCurve*,int)), this, SLOT(Selected(QwtPlotCurve*,int)));
+    poCurvePicker = new CanvasPicker( ui->plotCurve );
+    connect(poCurvePicker, SIGNAL(SigSelected(QwtPlotCurve*,int)), this, SLOT(Selected(QwtPlotCurve*,int)));
 
     ui->buttonScatterShift->setFixedHeight(12);
     ui->buttonScatterShift->setIconSize(QSize(10, 10));
@@ -456,7 +454,7 @@ void MainWindow::on_actionClear_triggered()
         ui->plotCurve->detachItems();
 
         /* 返回去设置指针为空就完事了 */
-        poPickerCurve->setNull();
+        poCurvePicker->setNull();
 
         ui->plotCurve->replot();
 
@@ -838,11 +836,6 @@ void MainWindow::initPlotCurve()
     /* 平移 */
     QwtPlotPanner *poPanner = new QwtPlotPanner(ui->plotCurve->canvas());
     poPanner->setMouseButton(Qt::LeftButton);
-
-    ui->plotCurve->setAxisScale(QwtPlot::xBottom, 1/64, 8192);
-    ui->plotCurve->setAxisScale(QwtPlot::yRight, 0, 100);
-
-    ui->plotCurve->setAxisAutoScale(QwtPlot::yLeft, true);
 
     ui->plotCurve->replot();
 }
@@ -1502,10 +1495,10 @@ void MainWindow::drawRx()
 
 void MainWindow::initPlotRho()
 {
-    poPickerRho = new CanvasPickerRho( ui->plotRho );
+    CanvasPickerRho *poPicker = new CanvasPickerRho( ui->plotRho );
 
-    connect(poPickerRho, SIGNAL(SigSelectedRho(QwtPlotCurve*,int)), this, SLOT(SelectedRho(QwtPlotCurve*,int)));
-    connect(poPickerRho, SIGNAL(SigMoved()), this, SLOT(rhoMoved()));
+    connect(poPicker, SIGNAL(SigSelectedRho(QwtPlotCurve*,int)), this, SLOT(SelectedRho(QwtPlotCurve*,int)));
+    connect(poPicker, SIGNAL(SigMoved()), this, SLOT(rhoMoved()));
     //    ui->plotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
@@ -2153,10 +2146,6 @@ void MainWindow::on_actionCalRho_triggered()
 
     ui->plotRho->detachItems();
 
-    gpoSelectedCurve = NULL;
-
-    poPickerRho->setNULL();
-
     /* 每条曲线一个thread，每个thread计算完毕了，会发射一个信号，main线程会draw Rho曲线 */
     foreach(STATION oStation, aoStation)
     {
@@ -2208,7 +2197,7 @@ void MainWindow::showTableRX(QSqlTableModel *poModel)
 {
     if( ui->tableViewRX->model() != NULL)
     {
-        ui->tableViewRX->model()->removeRows(0, ui->tableViewRX->model()->rowCount());
+        ui->tableViewRX->model()->removeRow(0, ui->tableViewRX->model()->rowCount());
     }
 
     ui->tableViewRX->setModel(poModel);
@@ -2224,7 +2213,7 @@ void MainWindow::showTableXY(QSqlTableModel *poModel)
 {
     if( ui->tableViewXY->model() != NULL)
     {
-        ui->tableViewXY->model()->removeRows(0, ui->tableViewXY->model()->rowCount());
+        ui->tableViewXY->model()->removeRow(0, ui->tableViewXY->model()->rowCount());
     }
 
     ui->tableViewXY->setModel(poModel);
@@ -2236,6 +2225,11 @@ void MainWindow::showTableXY(QSqlTableModel *poModel)
 
 void MainWindow::showTableRho(CustomTableModel *poModel)
 {
+    if( ui->tableViewRho->model() != NULL)
+    {
+        ui->tableViewRho->model()->removeRow(0, ui->tableViewRho->model()->rowCount());
+    }
+
     ui->tableViewRho->setModel(poModel);
 
     /* 这里要update，因为导出表格时的依据就是前表格的model */

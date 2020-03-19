@@ -65,7 +65,10 @@ public:
     QVector<RX*> gapoRX;
 
     /* Curve canvas picker object pointer */
-    CanvasPicker *poCurvePicker;
+    CanvasPicker *poPickerCurve;
+
+    CanvasPickerRho *poPickerRho;
+
 
     /* Draw Curve */
     void recoveryCurve(QwtPlotCurve *poCurve);
@@ -85,6 +88,7 @@ private:
 
     /* Scatter canvas picker object pointer */
     MarkerPicker *poMarkerPicker;
+
 
     /* Global Var: scatter pointer */
     QwtPlotCurve *gpoScatter;

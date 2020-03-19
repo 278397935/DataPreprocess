@@ -61,6 +61,11 @@ bool CanvasPickerRho::event( QEvent *ev )
     return QObject::event( ev );
 }
 
+void CanvasPickerRho::setNULL()
+{
+    d_selectedCurve = NULL;
+}
+
 bool CanvasPickerRho::eventFilter( QObject *object, QEvent *event )
 {
     if ( plot() == NULL || object != plot()->canvas() )

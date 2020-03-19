@@ -243,6 +243,11 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
 
     poDb->transaction();
 
+    if(!oQuery.exec("DELETE FROM Rho"))
+    {
+        qDebugV5()<<oQuery.lastError().text();
+    }
+
     foreach(RhoResult oRhoResult, aoRhoResult)
     {
         /* LineID, SiteID, DevID, DevCH, CompTag, F, I, Field, Rho */
@@ -281,8 +286,11 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
     poDb->commit();
 
     CustomTableModel *poModel = new CustomTableModel(this, *poDb);
+
     poModel->setTable("Rho");
+
     poModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+
     poModel->setHeaderData(0, Qt::Horizontal, QStringLiteral("线号"));
     poModel->setHeaderData(1, Qt::Horizontal, QStringLiteral("点号"));
     poModel->setHeaderData(2, Qt::Horizontal, QStringLiteral("仪器号"));
@@ -606,8 +614,11 @@ void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)
     poDb->commit();
 
     CustomTableModel *poModel = new CustomTableModel(this, *poDb);
+
     poModel->setTable("Rho");
+
     poModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+
     poModel->setHeaderData(0, Qt::Horizontal, QStringLiteral("线号"));
     poModel->setHeaderData(1, Qt::Horizontal, QStringLiteral("点号"));
     poModel->setHeaderData(2, Qt::Horizontal, QStringLiteral("仪器号"));

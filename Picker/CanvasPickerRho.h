@@ -17,6 +17,8 @@ public:
 
     virtual bool event( QEvent * );
 
+    void setNULL();
+
 private:
     void select( const QPoint & );
     void move( const QPoint & );
