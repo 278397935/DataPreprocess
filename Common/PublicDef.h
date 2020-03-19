@@ -55,4 +55,5 @@ struct Position
     double dNY;
     double dNZ;
 };
+
 #endif // PUBLICDEF_H

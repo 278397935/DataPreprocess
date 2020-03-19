@@ -72,6 +72,10 @@ public:
 
     void store();
 
+    bool bModifyField;
+    bool bModifyRho;
+
+
 private:
     Ui::MainWindow *ui;
 
@@ -162,6 +166,8 @@ private slots:
     /* 保存到Rx类中 */
     void on_actionSave_triggered();
 
+    /* 1，存储手动修改后的电场数据到csv文件
+     * 2，存储手动调整后的广域视电阻率数据到数据库文件 */
     void on_actionStore_triggered();
 
 
@@ -170,7 +176,7 @@ private slots:
     void showTableTX(QSqlTableModel*poModel);
     void showTableRX(QSqlTableModel*poModel);
     void showTableXY(QSqlTableModel*poModel);
-    void showTableRho(QSqlTableModel*poModel);
+    void showTableRho(CustomTableModel*poModel);
 
     void drawRho(STATION oStation, QVector<double> adF, QVector<double>adRho);
 
@@ -207,6 +213,8 @@ public slots:
 
     /* 手动拖动广域视电阻率，调整曲线形态功能。 */
     void SelectedRho(QwtPlotCurve *poCurve, int iIndex);
+
+    void rhoMoved();
 
     /* When Select point changed, then show scatter plot! */
     void drawScatter();

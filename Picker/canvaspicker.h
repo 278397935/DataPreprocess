@@ -1,6 +1,10 @@
 #include <qobject.h>
 #include <qwt_plot_textlabel.h>
 
+
+#include "Common/PublicDef.h"
+
+
 class QPoint;
 class QCustomEvent;
 class QwtPlot;
@@ -15,6 +19,8 @@ public:
     virtual bool eventFilter( QObject *, QEvent * );
 
     virtual bool event( QEvent * );
+
+    void setNull();
 
 private:
     void select( const QPoint & );

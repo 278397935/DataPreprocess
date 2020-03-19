@@ -262,7 +262,7 @@ void MarkerPicker::Move( const QPoint &pos )
                 return;
             }
 
-            gpoSelectedMarker->setLabel( QString("Left : X = %1").arg( moveX) );
+            gpoSelectedMarker->setLabel( QString("Left:X= %1").arg( QString::number(moveX, 'f', 0) ));
         }
         else/* Right */
         {
@@ -271,7 +271,7 @@ void MarkerPicker::Move( const QPoint &pos )
                 return;
             }
 
-            gpoSelectedMarker->setLabel( QString("Right: X = %1").arg( moveX) );
+            gpoSelectedMarker->setLabel( QString("Right:X = %1").arg( QString::number(moveX, 'f', 0)) );
         }
 
         /* Assign a new value */
@@ -290,7 +290,7 @@ void MarkerPicker::Move( const QPoint &pos )
                 return;
             }
 
-            gpoSelectedMarker->setLabel( QString("Bottom: Y = %1").arg( moveY) );
+            gpoSelectedMarker->setLabel( QString("Bottom:Y = %1").arg( QString::number(moveY, 'f', 2)) );
         }
         else/* Top */
         {
@@ -299,7 +299,7 @@ void MarkerPicker::Move( const QPoint &pos )
                 return;
             }
 
-            gpoSelectedMarker->setLabel( QString("Top : Y = %1").arg( moveY) );
+            gpoSelectedMarker->setLabel( QString("Top:Y = %1").arg( QString::number(moveY, 'f', 2)) );
         }
 
         /* Assign a new value */

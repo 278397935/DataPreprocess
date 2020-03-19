@@ -23,7 +23,8 @@ SOURCES += main.cpp \
     Picker/CanvasPickerRho.cpp \
     Picker/MarkerPicker.cpp \
     CalRhoThread.cpp \
-    MyDatabase.cpp
+    MyDatabase.cpp \
+    CustomTableModel.cpp
 
 HEADERS  += \
     Common/PublicDef.h \
@@ -33,7 +34,8 @@ HEADERS  += \
     Picker/CanvasPickerRho.h \
     Picker/MarkerPicker.h \
     CalRhoThread.h \
-    MyDatabase.h
+    MyDatabase.h \
+    CustomTableModel.h
 
 FORMS    += \
     Mainwindow.ui

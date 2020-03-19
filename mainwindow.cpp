@@ -170,10 +170,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(poDb, SIGNAL(SigModelTX(QSqlTableModel*)), this, SLOT(showTableTX(QSqlTableModel*)));
     connect(poDb, SIGNAL(SigModelRX(QSqlTableModel*)), this, SLOT(showTableRX(QSqlTableModel*)));
     connect(poDb, SIGNAL(SigModelXY(QSqlTableModel*)), this, SLOT(showTableXY(QSqlTableModel*)));
-    connect(poDb, SIGNAL(SigModelRho(QSqlTableModel*)), this, SLOT(showTableRho(QSqlTableModel*)));
+    connect(poDb, SIGNAL(SigModelRho(CustomTableModel*)), this, SLOT(showTableRho(CustomTableModel*)));
 
-    ui->tabWidget->setTabText(0, "电流");
-    ui->tabWidget->setTabText(1, "场值");
+    ui->tabWidget->setTabText(0, "电流/I");
+    ui->tabWidget->setTabText(1, "场值/mV");
     ui->tabWidget->setTabText(2, "坐标");
     ui->tabWidget->setTabText(3, "广域\u03c1表格");
     ui->tabWidget->setTabText(4, "广域\u03c1曲线");
@@ -211,6 +211,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(poCalRho, SIGNAL(SigRho(STATION, QVector<double>, QVector<double>)), this, SLOT(drawRho(STATION, QVector<double>, QVector<double>)));
 
     aoStrExisting.clear();
+
+    bModifyField = false;
+    bModifyRho   = false;
 }
 
 MainWindow::~MainWindow()
@@ -293,15 +296,19 @@ void MainWindow::on_actionImportRX_triggered()
 /*  Close Application */
 void MainWindow::on_actionClose_triggered()
 {
+
     QMessageBox oMsgBoxClose(QMessageBox::Question, "退出", "确定退出？",
                              QMessageBox::Yes | QMessageBox::No, NULL);
 
+    /* 1，先问退不退出 */
     if(oMsgBoxClose.exec() == QMessageBox::Yes)
     {
-        /* 判断有必要询问保存不保存中间结果,看store按钮是否可用. 都不可用了,还保存啥~?*/
-        if( ui->actionStore->isEnabled())
+        /* 2，如果电场值有修改&&还没保存，此时可以询问，是否保存手动调整后的电场值 */
+        if( bModifyField )
         {
-            QMessageBox oMsgBoxStore(QMessageBox::Question, "保存", "确定保存",
+            /* 判断有必要询问保存不保存中间结果,看store按钮是否可用. 都不可用了,还保存啥~?*/
+
+            QMessageBox oMsgBoxStore(QMessageBox::Question, "保存？", "是否保存修改后的\n电位数据？",
                                      QMessageBox::Yes | QMessageBox::No, NULL);
             if(oMsgBoxStore.exec() == QMessageBox::Yes)
             {
@@ -309,11 +316,36 @@ void MainWindow::on_actionClose_triggered()
             }
         }
 
+        /* 3，如果广域视电阻率曲线有修改&&还没保存，此时可以询问，是否保存手动调整后的广域视电阻率 */
+        if( bModifyRho )
+        {
+            QMessageBox oMsgBoxClose(QMessageBox::Question, "保存？", "是否保存圆滑后的\n电阻率数据？",
+                                     QMessageBox::Yes | QMessageBox::No, NULL);
+
+            if(oMsgBoxClose.exec() == QMessageBox::Yes)
+            {
+                /* 保存Rho曲线上的数据至数据库，以便导出数据库数据到csv文档。再调整广域视电阻率时，何时去点这个保存按钮？*/
+                QMap<QwtPlotCurve*, STATION>::const_iterator it;
+                for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
+                {
+                    QPolygonF aoPointF;
+                    aoPointF.clear();
+
+                    for(uint i = 0; i < it.key()->dataSize(); i++)
+                    {
+                        aoPointF.append(it.key()->sample(i));
+                    }
+
+                    poDb->modifyRho(it.value(), aoPointF);
+                }
+            }
+        }
+
+        /* 你选保存还是选不保存，自己定。最后还是要关闭程序 */
         this->close();
     }
 }
-
-/*  */
+/* 清空TX　RX */
 void MainWindow::on_actionClear_triggered()
 {
     QMessageBox oMsgBox(QMessageBox::Question, "清除", "确定清空数据?",
@@ -327,22 +359,15 @@ void MainWindow::on_actionClear_triggered()
             ui->actionImportTX->setEnabled(true);
         }
 
-        if(ui->actionStore->isEnabled())
+        if( bModifyField )
         {
-            QMessageBox oMsgBoxStore(QMessageBox::Question, "保存", "即将关闭接收端数据,\n是否将处理结果保存?",
+            QMessageBox oMsgBoxStore(QMessageBox::Question, "保存？", "是否保存修改后的\n电位数据？",
                                      QMessageBox::Yes | QMessageBox::No, NULL);
             if(oMsgBoxStore.exec() == QMessageBox::Yes)
             {
                 this->store();
             }
         }
-
-        gpoSelectedCurve = NULL;
-        giSelectedIndex = -1;
-
-        gpoSelectedRX = NULL;
-
-        gpoErrorCurve = NULL;
 
         ui->stackedWidget->setCurrentIndex(0);
 
@@ -361,6 +386,7 @@ void MainWindow::on_actionClear_triggered()
         {
             if(poCurve != NULL)
             {
+                poCurve->detach();
                 delete poCurve;
                 poCurve == NULL;
             }
@@ -378,10 +404,13 @@ void MainWindow::on_actionClear_triggered()
 
         gapoRX.clear();
 
-        ui->plotCurve->detachItems();
+        if(gpoErrorCurve !=NULL)
+        {
+            gpoErrorCurve->detach();
 
-        ui->plotCurve->repaint();
-
+            delete gpoErrorCurve;
+            gpoErrorCurve = NULL;
+        }
 
         /* 右手边，tableWidget 褫干净 */
         foreach (QTreeWidgetItem *poItem, gmapCurveItem.values())
@@ -413,6 +442,23 @@ void MainWindow::on_actionClear_triggered()
         /* 发射端和接收端数据都清除了,关闭 剪裁 功能*/
         ui->actionCutterH->setEnabled(false);
         ui->actionCutterV->setEnabled(false);
+
+        ui->plotCurve->setFooter("");
+
+        gpoSelectedCurve = NULL;
+        giSelectedIndex = -1;
+        gpoErrorCurve = NULL;
+
+        gpoSelectedRX = NULL;
+
+        ui->plotCurve->detachItems();
+
+        /* 返回去设置指针为空就完事了 */
+        poCurvePicker->setNull();
+
+        ui->plotCurve->replot();
+
+        qDebugV0()<<"clear~~~";
     }
 }
 
@@ -436,25 +482,24 @@ void MainWindow::recoveryCurve(QwtPlotCurve *poCurve)
     ui->plotCurve->replot();
 }
 
-/* 保存中间结果， */
+/* 针对电场信号做了手动调整后，保存中间结果，存到csv文件中 */
 void MainWindow::store()
 {
     foreach(RX *poRx, gapoRX)
     {
-        qDebugV0()<<poRx->oStrCSV;
+        //        qDebugV0()<<poRx->oStrCSV;
 
         QString oStrFileName = poRx->oStrCSV;
         oStrFileName.chop(4);
 
         oStrFileName.append("_filtered.csv");
 
-        qDebugV0()<<oStrFileName;
+        //        qDebugV0()<<oStrFileName;
 
         QFile file(oStrFileName);
 
-        if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        if(!file.open( QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text ) )
         {
-
             return;
         }
 
@@ -476,6 +521,9 @@ void MainWindow::store()
 
     /* 中间结果保存完了之后,将store键置为Disable */
     ui->actionStore->setEnabled(false);
+
+    /* 已经保存了，修改提示标识就应该置false，关闭程序和清除数据时就不必提示 */
+    bModifyField = false;
 }
 
 /**********************************************************************
@@ -503,9 +551,9 @@ void MainWindow::drawCurve()
 
     gmapCurveItem.clear();
 
-    ui->plotCurve->detachItems();
+    ui->plotCurve->detachItems(QwtPlotItem::Rtti_PlotCurve, true);
 
-    ui->plotCurve->repaint();
+    ui->plotCurve->replot();
 
     disconnect(ui->treeWidgetLegend, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(shiftCurveSelect(QTreeWidgetItem*,int)));
     ui->treeWidgetLegend->clear();
@@ -922,6 +970,7 @@ void MainWindow::shiftAllCurve(int iLogicalIndex)
     }
 }
 
+/* 点击tavlewidget 的item */
 void MainWindow::shiftCurveSelect(QTreeWidgetItem *poItem, int iCol)
 {
     if(poItem == NULL || iCol == 0)
@@ -932,7 +981,7 @@ void MainWindow::shiftCurveSelect(QTreeWidgetItem *poItem, int iCol)
     {
         QwtPlotCurve *poCurve = gmapCurveItem.key(poItem);
 
-        qDebugV0()<<poCurve->title().text();
+//        qDebugV0()<<poCurve->title().text();
 
         switch (iCol)
         {
@@ -968,43 +1017,30 @@ void MainWindow::shiftCurveSelect(QTreeWidgetItem *poItem, int iCol)
 /* slot 函数。 接收picker对象的signal  SigSelected(poCurve, index) */
 void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
 {
-    if( poCurve->style() == QwtPlotCurve::Lines)
-    {
-        gpoSelectedCurve = poCurve;
-        giSelectedIndex = iIndex;
+    gpoSelectedCurve = poCurve;
+    giSelectedIndex = iIndex;
 
-        gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
+    gpoSelectedRX = this->gmapCurveData.value(gpoSelectedCurve);
 
-        this->restoreCurve();
+    this->restoreCurve();
 
-        this->drawScatter();
-        this->switchHighlightCurve();
-        this->drawError();
+    this->drawScatter();
+    this->switchHighlightCurve();
+    this->drawError();
 
-        QString oStrFooter(QString("%1 \u2708 %2Hz")
-                           .arg(poCurve->title().text())
-                           .arg(poCurve->data()->sample(iIndex).x()));
-        QwtText oTxt;
-        oTxt.setText(oStrFooter);
-        QFont oFont("Times New Roman", 12, QFont::Bold);
-        oTxt.setFont(oFont);
-        oTxt.setColor(Qt::blue);
+    QString oStrFooter(QString("%1 \u2708 %2Hz")
+                       .arg(poCurve->title().text())
+                       .arg(poCurve->data()->sample(iIndex).x()));
+    QwtText oTxt;
+    oTxt.setText(oStrFooter);
+    QFont oFont("Times New Roman", 12, QFont::Bold);
+    oTxt.setFont(oFont);
+    oTxt.setColor(Qt::blue);
 
-        ui->plotCurve->setFooter(oTxt);
-
-    }
-    else if(poCurve->style() == QwtPlotCurve::Sticks)
-    {
-        // qDebugV0()<<"相对均方误差   quxian玩不得~~~";
-        ui->plotCurve->setFooter("");
-    }
-    else
-    {
-        // qDebugV0()<<"buxiade s shme 玩不得~~~";
-        ui->plotCurve->setFooter("");
-    }
+    ui->plotCurve->setFooter(oTxt);
 }
 
+/*  */
 void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
 {
     if(poCurve != NULL && iIndex != -1)
@@ -1012,8 +1048,14 @@ void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
         gpoSelectedCurve = poCurve;
         giSelectedIndex = iIndex;
 
+        /* 启用这个按钮的作用就只是为了保存调整后的Rho结果 */
         ui->actionStore->setEnabled(true);
     }
+}
+
+void MainWindow::rhoMoved()
+{
+    bModifyRho = true;
 }
 
 /* Scatter changed, then, curve's point need be change. */
@@ -1073,6 +1115,7 @@ void MainWindow::markerMoved()
 
     /* Set new samples on Curve */
     gpoErrorCurve->setSamples( aoPointFError );
+    gpoErrorCurve->attach( ui->plotCurve );
 
     /* Update MSRE */
     QString oStrFooter(QString("相对均方误差: %1%")
@@ -1189,17 +1232,25 @@ void MainWindow::drawScatter()
     ui->actionCutterV->setEnabled(true);
 }
 
+
+/* 绘制RMS曲线 */
 void MainWindow::drawError()
 {
-    if( gpoErrorCurve != NULL)
+    if(gpoSelectedCurve ==NULL)
+    {
+        return;
+    }
+
+    if(gpoErrorCurve != NULL)
     {
         gpoErrorCurve->detach();
 
         delete gpoErrorCurve;
+
         gpoErrorCurve = NULL;
     }
 
-    /* Draw new error bar */
+    /* 初始化RMS曲线 */
     gpoErrorCurve = new QwtPlotCurve(tr("相对均方误差"));
     if( gpoErrorCurve == NULL )
     {
@@ -1219,7 +1270,6 @@ void MainWindow::drawError()
     gpoErrorCurve->setPen( Qt::black, 0.5, Qt::DotLine );
     gpoErrorCurve->setStyle( QwtPlotCurve::Sticks );
 
-
     RX *poRX = gmapCurveData.value(gpoSelectedCurve);
 
     QPolygonF aoPointF;
@@ -1233,6 +1283,7 @@ void MainWindow::drawError()
     gpoErrorCurve->setSamples( aoPointF );
     gpoErrorCurve->attach( ui->plotCurve );
 
+    ui->plotCurve->setAxisScale(QwtPlot::yRight, 0, gpoErrorCurve->maxYValue());
 
     ui->plotCurve->replot();
 }
@@ -1447,6 +1498,7 @@ void MainWindow::initPlotRho()
     CanvasPickerRho *poPicker = new CanvasPickerRho( ui->plotRho );
 
     connect(poPicker, SIGNAL(SigSelectedRho(QwtPlotCurve*,int)), this, SLOT(SelectedRho(QwtPlotCurve*,int)));
+    connect(poPicker, SIGNAL(SigMoved()), this, SLOT(rhoMoved()));
     //    ui->plotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
     //ui->plotCurve->setTitle(QwtText("Curve Plot"));
@@ -1576,6 +1628,7 @@ void MainWindow::restoreCurve()
         }
 
         gpoErrorCurve->setSamples( aoPointF );
+        gpoErrorCurve->attach( ui->plotCurve );
 
         ui->plotScatter->setFooter("");
 
@@ -1791,7 +1844,7 @@ void MainWindow::LastDirWrite(QString oStrFileName)
 
     QFile oFileLastDir(LASTDIR);
 
-    if( !oFileLastDir.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) )
+    if( !oFileLastDir.open( QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text ) )
     {
         qDebugV0()<<"Open last dir file false!";
         return;
@@ -1881,28 +1934,6 @@ void MainWindow::initPlotTx()
 /* 导出广域视电阻率计算结果到csv文档。 */
 void MainWindow::on_actionExportRho_triggered()
 {
-    QMessageBox oMsgBoxClose(QMessageBox::Question, "保存修改", "是否按当前呈现的广域视电阻率曲线形态导出结果？",
-                             QMessageBox::Yes | QMessageBox::No, NULL);
-
-    if(oMsgBoxClose.exec() == QMessageBox::Yes)
-    {
-        /* 保存Rho曲线上的数据至数据库，以便导出数据库数据到csv文档。再调整广域视电阻率时，何时去点这个保存按钮？*/
-        QMap<QwtPlotCurve*, STATION>::const_iterator it;
-        for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
-        {
-            QPolygonF aoPointF;
-            aoPointF.clear();
-
-            for(uint i = 0; i < it.key()->dataSize(); i++)
-            {
-                qDebugV0()<<it.key()->sample(i);
-                aoPointF.append(it.key()->sample(i));
-            }
-
-            poDb->modifyRho(it.value(), aoPointF);
-        }
-    }
-
     /* 不管回写还是不回写，都要导出 */
     QString oStrDefault = QDateTime::currentDateTime().toString("yyyy年MM月dd日HH时mm分ss秒_广域视电阻率结果");
 
@@ -1911,7 +1942,7 @@ void MainWindow::on_actionExportRho_triggered()
                                                         "(*.csv *.txt *.dat)");
 
     QFile oFile(oStrFileName);
-    bool openOk = oFile.open(QIODevice::WriteOnly|QIODevice::Truncate|QIODevice::Text);
+    bool openOk = oFile.open( QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text );
     if(!openOk)
     {
         return ;
@@ -1978,8 +2009,6 @@ void MainWindow::on_actionRecovery_triggered()
         /* 广域视电阻率的曲线(视电阻率手动任意拖动 plot)，点击恢复键，则恢复选中点（单个点） */
     case 1:
     {
-        qDebugV0()<<gpoSelectedCurve->title().text()<<giSelectedIndex;
-
         STATION oStation = gmapCurveStation.value(gpoSelectedCurve);
 
         double dF = gpoSelectedCurve->sample(giSelectedIndex).x();
@@ -2042,19 +2071,54 @@ void MainWindow::on_actionSave_triggered()
 
     /* 保存完了, 置为disable状态 */
     ui->actionSave->setEnabled(false);
+
+    bModifyField = true;
+
 }
 
-/* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve */
+/* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve
+ * 1，存储手动修改后的电场数据到csv文件
+ * 2，存储手动调整后的广域视电阻率数据到数据库文件 */
 void MainWindow::on_actionStore_triggered()
 {
-    this->store();
+    switch (ui->stackedWidget->currentIndex())
+    {
+    case 0:
+        this->store();
+
+        break;
+
+    case 1:
+    {
+        QMap<QwtPlotCurve*, STATION>::const_iterator it;
+        for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
+        {
+            QPolygonF aoPointF;
+            aoPointF.clear();
+
+            for(uint i = 0; i < it.key()->dataSize(); i++)
+            {
+               // qDebugV0()<<it.key()->sample(i);
+                aoPointF.append(it.key()->sample(i));
+            }
+
+            poDb->modifyRho(it.value(), aoPointF);
+
+            /* 中间结果保存完了之后,将store键置为Disable */
+            ui->actionStore->setEnabled(false);
+            /* 保存了之后就置false */
+            bModifyRho = false;
+        }
+    }
+        break;
+    default:
+        break;
+    }
 }
 
 
 void MainWindow::on_actionCalRho_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(1);
-
     /* Import RX */
     poDb->importRX(gapoRX);
 
@@ -2065,10 +2129,16 @@ void MainWindow::on_actionCalRho_triggered()
 
     if(oStrFileName.length() != 0)
     {
-        poDb->importXY(oStrFileName);
+       if( !poDb->importXY(oStrFileName) )
+       {
+           return;
+       }
     }
 
-    poCalRho->getAB();
+   if(! poCalRho->getAB() )
+   {
+       return;
+   }
 
     QList<STATION> aoStation = poDb->getStation();
 
@@ -2093,6 +2163,8 @@ void MainWindow::on_actionCalRho_triggered()
     ui->actionStore->setEnabled(false);
 
     ui->actionCalRho->setEnabled(true);
+
+    ui->stackedWidget->setCurrentIndex(1);
 }
 
 void MainWindow::showTableTX(QSqlTableModel *poModel)
@@ -2134,7 +2206,7 @@ void MainWindow::showTableXY(QSqlTableModel *poModel)
     ui->tabWidget->setCurrentIndex(2);
 }
 
-void MainWindow::showTableRho(QSqlTableModel *poModel)
+void MainWindow::showTableRho(CustomTableModel *poModel)
 {
     ui->tableViewRho->setModel(poModel);
 

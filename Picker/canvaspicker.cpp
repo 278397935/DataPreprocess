@@ -51,6 +51,12 @@ bool CanvasPicker::event( QEvent *ev )
     return QObject::event( ev );
 }
 
+/* 设置选中线指针为空，这样就不会引起意外down机 */
+void CanvasPicker::setNull()
+{
+   d_selectedCurve = NULL;
+}
+
 bool CanvasPicker::eventFilter( QObject *object, QEvent *event )
 {
     if ( plot() == NULL || object != plot()->canvas() )
@@ -126,9 +132,9 @@ void CanvasPicker::select( const QPoint &pos )
         d_selectedCurve = curve;
         d_selectedPoint = index;
 
-        showCursor( true );
-
         emit SigSelected(d_selectedCurve, d_selectedPoint);
+
+        showCursor( true );
     }
 }
 
@@ -137,11 +143,6 @@ void CanvasPicker::showCursor( bool showIt )
 {
     if ( !d_selectedCurve )
         return;
-
-    if(d_selectedCurve->style()==QwtPlotCurve::Sticks)
-        return;
-
-    //qDebug()<<d_selectedCurve->title().text()<<d_selectedPoint;
 
     QwtSymbol *symbol = const_cast<QwtSymbol *>( d_selectedCurve->symbol() );
 

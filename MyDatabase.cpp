@@ -150,7 +150,7 @@ void MyDatabase::importRX(QVector<RX*> apoRX)
     emit SigModelRX(poModel);
 }
 
-void MyDatabase::importXY(QString oStrFileName)
+bool MyDatabase::importXY(QString oStrFileName)
 {
     QFile oFile(oStrFileName);
 
@@ -159,7 +159,7 @@ void MyDatabase::importXY(QString oStrFileName)
         QMessageBox::critical(NULL, tr("错误"),
                               QString("打开:\n%1\n失败").arg(oStrFileName),
                               QMessageBox::Yes | QMessageBox::Yes);
-        return;
+        return false;
     }
 
     QString::SectionFlag flag = QString::SectionSkipEmpty;
@@ -178,6 +178,8 @@ void MyDatabase::importXY(QString oStrFileName)
     if( stream.readLine().split(",").count() != 8)
     {
         emit SigMsg("坐标文件有误，请核实！");
+
+        return false;
     }
 
     stream.seek(0);
@@ -210,6 +212,8 @@ void MyDatabase::importXY(QString oStrFileName)
 
         {
             qDebugV5()<<oQuery.lastError().text();
+
+            return false;
         }
     }
 
@@ -229,6 +233,8 @@ void MyDatabase::importXY(QString oStrFileName)
     poModel->select();
 
     emit SigModelXY(poModel);
+
+    return true;
 }
 
 void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
@@ -241,7 +247,7 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
     {
         /* LineID, SiteID, DevID, DevCH, CompTag, F, I, Field, Rho */
         if( !oQuery.exec(QString("INSERT INTO Rho VALUES('%1', '%2', %3, %4, '%5',"
-                                 "%6, %7, %8, '%9', %10, "
+                                 "%6, %7, '%8', '%9',  '%10', "
                                  "'%11', '%12', '%13', '%14', '%15', '%16', "
                                  "'%17', '%18', '%19', '%20', '%21', '%22')")
                          .arg(oRhoResult.oStation.oStrLineId)
@@ -251,7 +257,7 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
                          .arg(oRhoResult.oStation.oStrTag)
                          .arg(oRhoResult.dF)
                          .arg(oRhoResult.dI)
-                         .arg(oRhoResult.dField)
+                         .arg(QString::number(oRhoResult.dField, 'f',4))
                          .arg(QString("%1%").arg(QString::number(oRhoResult.dErr, 'f', 2)))
                          .arg(QString::number(oRhoResult.dRho, 'f',4))
                          .arg(QString::number(oRhoResult.oAB.dMX, 10, FloatPrecision))
@@ -274,7 +280,7 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
 
     poDb->commit();
 
-    QSqlTableModel *poModel = new QSqlTableModel(this, *poDb);
+    CustomTableModel *poModel = new CustomTableModel(this, *poDb);
     poModel->setTable("Rho");
     poModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
     poModel->setHeaderData(0, Qt::Horizontal, QStringLiteral("线号"));
@@ -581,7 +587,7 @@ void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)
     foreach(QPointF oPoint, aoPointF)
     {
         /* LineID, SiteID, DevID, DevCH, CompTag, F, I, Field, Rho */
-        if( !oQuery.exec(QString("Update Rho Set Rho = %1 Where "
+        if( !oQuery.exec(QString("Update Rho Set Rho = '%1' Where "
                                  "LineId = '%2' and SiteId = '%3' and "
                                  "DevId  = %4   and DevCh  = %5   and "
                                  "F = %6 ")
@@ -599,7 +605,7 @@ void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)
 
     poDb->commit();
 
-    QSqlTableModel *poModel = new QSqlTableModel(this, *poDb);
+    CustomTableModel *poModel = new CustomTableModel(this, *poDb);
     poModel->setTable("Rho");
     poModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
     poModel->setHeaderData(0, Qt::Horizontal, QStringLiteral("线号"));

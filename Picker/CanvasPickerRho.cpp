@@ -170,6 +170,8 @@ void CanvasPickerRho::move( const QPoint &pos )
     }
     d_selectedCurve->setSamples( xData, yData );
 
+    emit SigMoved();
+
     /*
        Enable QwtPlotCanvas::ImmediatePaint, so that the canvas has been
        updated before we paint the cursor on it.

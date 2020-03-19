@@ -219,7 +219,6 @@ bool CalRhoThread::getAB()
     ptTxMid.setX( (ptA.x() + ptB.x())/2 );
     ptTxMid.setY( (ptA.y() + ptB.y())/2 );
 
-    qDebugV0()<<fixed<< qSetRealNumberPrecision(3)<<"AB:"<<ptA<<ptB;
 
     return true;
 }

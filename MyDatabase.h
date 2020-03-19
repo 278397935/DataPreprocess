@@ -17,6 +17,9 @@
 
 #include "Data/RX.h"
 
+
+#include "CustomTableModel.h"
+
 typedef struct _STATION
 {
     QString oStrLineId;
@@ -59,7 +62,7 @@ public:
     void importRX(QVector<RX *> apoRX);
 
     /* 将AB和测点坐标写入到数据库中 */
-    void importXY(QString oStrFileName);
+    bool importXY(QString oStrFileName);
 
     /* 将计算得到的广域视电阻率与相关条件信息一并写入到数据库中 */
     void importRho( QList<RhoResult> aoRhoResult);
@@ -96,7 +99,7 @@ signals:
 
     void SigModelXY(QSqlTableModel *);
 
-    void SigModelRho(QSqlTableModel *);
+    void SigModelRho(CustomTableModel *);
 
 public slots:
 
