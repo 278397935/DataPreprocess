@@ -2080,7 +2080,6 @@ void MainWindow::on_actionSave_triggered()
     ui->actionSave->setEnabled(false);
 
     bModifyField = true;
-
 }
 
 /* 做了裁剪之后， 点击保存， 保存的是散点（detail）， 接着更新Curve
@@ -2123,7 +2122,7 @@ void MainWindow::on_actionStore_triggered()
     }
 }
 
-
+/* 计算广域视电阻率 */
 void MainWindow::on_actionCalRho_triggered()
 {
     /* Import RX */
@@ -2182,12 +2181,9 @@ void MainWindow::on_actionCalRho_triggered()
 
 void MainWindow::showTableTX(QSqlTableModel *poModel)
 {    
-    if( ui->tableViewTX->model() != NULL)
-    {
-        ui->tableViewTX->model()->removeRows(0, ui->tableViewTX->model()->rowCount());
-    }
-
     ui->tableViewTX->setModel(poModel);
+
+    ui->tableViewTX->update();
 
     ui->tableViewTX->repaint();
 
@@ -2206,12 +2202,9 @@ void MainWindow::showTableTX(QSqlTableModel *poModel)
 
 void MainWindow::showTableRX(QSqlTableModel *poModel)
 {
-    if( ui->tableViewRX->model() != NULL)
-    {
-        ui->tableViewRX->model()->removeRows(0, ui->tableViewRX->model()->rowCount());
-    }
-
     ui->tableViewRX->setModel(poModel);
+
+    ui->tableViewRX->update();
 
     ui->tableViewRX->repaint();
 
@@ -2222,12 +2215,9 @@ void MainWindow::showTableRX(QSqlTableModel *poModel)
 
 void MainWindow::showTableXY(QSqlTableModel *poModel)
 {
-    if( ui->tableViewXY->model() != NULL)
-    {
-        ui->tableViewXY->model()->removeRows(0, ui->tableViewXY->model()->rowCount());
-    }
-
     ui->tableViewXY->setModel(poModel);
+
+    ui->tableViewXY->update();
 
     ui->tableViewXY->repaint();
 
@@ -2258,8 +2248,6 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
     QList<double> listF = setF.toList();
 
     qSort(listF);
-
-    //    qDebugV0()<<listF;
 
     /* Fill ticks */
     QList<double> adTicks[QwtScaleDiv::NTickTypes];
