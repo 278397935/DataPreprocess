@@ -147,6 +147,10 @@ void CanvasPickerRho::select( const QPoint &pos )
 
         emit SigSelectedRho(curve, index);
     }
+    else
+    {
+        emit SigSelectedRho();
+    }
 }
 
 // Move the selected point

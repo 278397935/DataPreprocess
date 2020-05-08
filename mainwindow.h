@@ -99,9 +99,6 @@ private:
 
     RX *gpoSelectedRX;
 
-
-
-
     //QwtPlotTextLabel *gpoErrorTextLabel;
 
     /* marker lines list */
@@ -193,6 +190,8 @@ private slots:
 
     void on_actionReadme_triggered();
 
+    void on_actionImportRho_triggered();
+
 public slots:
     /* Draw Curve */
     void drawCurve();
@@ -217,6 +216,7 @@ public slots:
 
     /* 手动拖动广域视电阻率，调整曲线形态功能。 */
     void SelectedRho(QwtPlotCurve *poCurve, int iIndex);
+    void SelectedRho();
 
     void rhoMoved();
 

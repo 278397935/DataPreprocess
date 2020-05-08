@@ -35,6 +35,8 @@ private:
     QwtPlotCurve *d_selectedCurve;
     int d_selectedPoint;
 signals:
+    void SigSelectedRho();
+
     void SigSelectedRho(QwtPlotCurve *, int);
 
     void SigMoved();

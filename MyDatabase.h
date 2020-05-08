@@ -36,14 +36,14 @@ typedef struct _RhoResult
 {
     STATION oStation;
 
-    Position oAB;
-    Position oMN;
-
     double dF;
     double dI;
     double dField;
     double dErr;
     double dRho;
+
+    Position oAB;
+    Position oMN;
 }RhoResult;
 
 
@@ -67,6 +67,8 @@ public:
     /* 将计算得到的广域视电阻率与相关条件信息一并写入到数据库中 */
     void importRho( QList<RhoResult> aoRhoResult);
 
+    void cleanRho();
+
     QVector<double> getF(STATION oStation);
 
     double getI(double dF);
@@ -77,7 +79,7 @@ public:
 
     Position getCoordinate(QString oStrLineId, QString oStrSiteId);
 
-    QList<STATION> getStation();
+    QList<STATION> getStation(QString oStrTableName);
 
     /* 从数据库里面读取指定线&&指定点的广域视电阻率值 */
     double getRho(STATION oStation, double dF);

@@ -243,11 +243,6 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
 
     poDb->transaction();
 
-    if(!oQuery.exec("DELETE FROM Rho"))
-    {
-        qDebugV5()<<oQuery.lastError().text();
-    }
-
     foreach(RhoResult oRhoResult, aoRhoResult)
     {
         /* LineID, SiteID, DevID, DevCH, CompTag, F, I, Field, Rho */
@@ -264,7 +259,7 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
                          .arg(oRhoResult.dI)
                          .arg(QString::number(oRhoResult.dField, 'f',4))
                          .arg(QString("%1%").arg(QString::number(oRhoResult.dErr, 'f', 2)))
-                         .arg(QString::number(oRhoResult.dRho, 'f',4))
+                         .arg(QString::number(oRhoResult.dRho, 'f',0))
                          .arg(QString::number(oRhoResult.oAB.dMX, 10, FloatPrecision))
                          .arg(QString::number(oRhoResult.oAB.dMY, 10, FloatPrecision))
                          .arg(QString::number(oRhoResult.oAB.dMZ, 10, FloatPrecision))
@@ -320,6 +315,20 @@ void MyDatabase::importRho(QList<RhoResult> aoRhoResult)
     emit SigModelRho(poModel);
 }
 
+void MyDatabase::cleanRho()
+{
+    QSqlQuery oQuery(*poDb);
+
+    poDb->transaction();
+
+    if(!oQuery.exec("DELETE FROM Rho"))
+    {
+        qDebugV5()<<oQuery.lastError().text();
+    }
+
+    poDb->commit();
+}
+
 QVector<double> MyDatabase::getF(STATION oStation)
 {
     QSqlQuery oQuery(*poDb);
@@ -340,11 +349,11 @@ QVector<double> MyDatabase::getF(STATION oStation)
     {
         adF.append(oQuery.value("F").toDouble());
     }
-    qDebugV0()<<oStation.oStrLineId
-             <<oStation.oStrSiteId
-            <<oStation.iDevId
-           <<oStation.iDevCh
-          <<adF;
+//    qDebugV0()<<oStation.oStrLineId
+//             <<oStation.oStrSiteId
+//            <<oStation.iDevId
+//           <<oStation.iDevCh
+//          <<adF;
 
     return adF;
 }
@@ -471,13 +480,13 @@ Position MyDatabase::getCoordinate(QString oStrLineId, QString oStrSiteId)
     return aoPt;
 }
 
-QList<STATION> MyDatabase::getStation()
+QList<STATION> MyDatabase::getStation(QString oStrTableName)
 {
     QList< STATION > aoStation;
 
     QSqlQuery oQuery(*poDb);
 
-    if( ! oQuery.exec(QString("SELECT LineId, SiteId, DevId, DevCh, CompTag FROM RX")) )
+    if( !oQuery.exec(QString("SELECT LineId, SiteId, DevId, DevCh, CompTag FROM '%1'").arg(oStrTableName)) )
     {
         qDebugV5()<<oQuery.lastError().text();
     }
@@ -588,8 +597,6 @@ void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)
 
     QSqlQuery oQuery(*poDb);
 
-    qDebugV0()<<oStation.oStrLineId<<oStation.oStrSiteId<<oStation.iDevId<<oStation.iDevCh;
-
     poDb->transaction();
 
     foreach(QPointF oPoint, aoPointF)
@@ -599,7 +606,7 @@ void MyDatabase::modifyRho(STATION oStation, QPolygonF aoPointF)
                                  "LineId = '%2' and SiteId = '%3' and "
                                  "DevId  = %4   and DevCh  = %5   and "
                                  "F = %6 ")
-                         .arg(oPoint.y())
+                         .arg(QString::number(oPoint.y(),'f',0))
                          .arg(oStation.oStrLineId)
                          .arg(oStation.oStrSiteId)
                          .arg(oStation.iDevId)

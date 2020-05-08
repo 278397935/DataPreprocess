@@ -68,7 +68,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    this->setWindowTitle("Tang_广域数据预处理工具_" + QDateTime::currentDateTime().toString("yyyy年MM月dd日AP"));
+    this->setWindowTitle("广域数据预处理工具 v2.1");
 
     qRegisterMetaType<STATION_INFO>("STATION_INFO");
     qRegisterMetaType< QVector<qreal> >("QVector<qreal>");
@@ -211,6 +211,12 @@ MainWindow::MainWindow(QWidget *parent) :
     this->initPlotRho();
 
     connect(poCalRho, SIGNAL(SigRho(STATION, QVector<double>, QVector<double>)), this, SLOT(drawRho(STATION, QVector<double>, QVector<double>)));
+
+
+    ui->verticalLayout->setMargin(0);
+    ui->horizontalLayout->setMargin(0);
+    ui->horizontalLayout_2->setMargin(0);
+    ui->horizontalLayout_3->setMargin(0);
 
     aoStrExisting.clear();
 
@@ -467,8 +473,8 @@ void MainWindow::on_actionClear_triggered()
 /* 显示提示信息，QMessage自动定时关闭。 */
 void MainWindow::showMsg(QString oStrMsg)
 {
-    QMessageBox *poMsgBox = new QMessageBox(QMessageBox::Information,tr("提示(5秒自动关闭)"),oStrMsg);
-    QTimer::singleShot(5000, poMsgBox, SLOT(accept())); //也可将accept改为close
+    QMessageBox *poMsgBox = new QMessageBox(QMessageBox::Information,tr("提示(3秒自动关闭)"),oStrMsg);
+    QTimer::singleShot(3000, poMsgBox, SLOT(accept())); //也可将accept改为close
     poMsgBox->exec();//box->show();都可以
 }
 
@@ -489,8 +495,6 @@ void MainWindow::store()
 {
     foreach(RX *poRx, gapoRX)
     {
-        //        qDebugV0()<<poRx->oStrCSV;
-
         QString oStrFileName = poRx->oStrCSV;
         oStrFileName.chop(4);
 
@@ -588,7 +592,7 @@ void MainWindow::drawCurve()
     foreach(RX* poRX, gapoRX)
     {
         /* Curve title, cut MCSD_ & suffix*/
-        const QwtText oTxtTitle( QString(tr("线号:%1__点号:%2__仪器号:%3__通道号:%4(%5)"))
+        const QwtText oTxtTitle( QString(tr("L%1_S%2_D%3_CH%4_%5"))
                                  .arg(poRX->goStrLineId)
                                  .arg(poRX->goStrSiteId)
                                  .arg(poRX->giDevId)
@@ -858,8 +862,12 @@ void MainWindow::initPlotScatter()
     ui->plotScatter->setFrameStyle(QFrame::NoFrame);
     ui->plotScatter->enableAxis(QwtPlot::xBottom, true);
     ui->plotScatter->enableAxis(QwtPlot::yLeft,   true);
+
+    ui->plotScatter->enableAxis(QwtPlot::xTop,   false);
+    ui->plotScatter->enableAxis(QwtPlot::yRight, false);
+
     ui->plotScatter->setAutoDelete ( true );
-    ////
+
     /* Clean up the Copy items, Before creating new scatter, Even without. */
     if( gpoScatter != NULL )
     {
@@ -881,12 +889,25 @@ void MainWindow::initPlotScatter()
         poMarkerPicker = NULL;
     }
 
+    for ( int i = 0; i < ui->plotScatter->axisCnt; i++ )
+    {
+        QwtScaleWidget *poScaleWidget = ui->plotScatter->axisWidget( i);
+        if (poScaleWidget)
+        {
+            poScaleWidget->setMargin( 0 );
+        }
+
+        QwtScaleDraw *poScaleDraw = ui->plotScatter->axisScaleDraw( i );
+        if ( poScaleDraw )
+        {
+            poScaleDraw->enableComponent( QwtAbstractScaleDraw::Backbone, false );
+        }
+    }
+
     poMarkerPicker = new MarkerPicker( ui->plotScatter, gpoScatter );
     connect( poMarkerPicker, SIGNAL(SigMarkerMoved()), this , SLOT(markerMoved()));
 
     gpoScatter->setStyle(QwtPlotCurve::NoCurve);
-
-
 
     QwtSymbol *poSymbol = new QwtSymbol( QwtSymbol::Ellipse,
                                          QBrush( Qt::blue ),
@@ -1035,9 +1056,13 @@ void MainWindow::Selected(QwtPlotCurve *poCurve, int iIndex)
     this->switchHighlightCurve();
     this->drawError();
 
-    QString oStrFooter(QString("%1 \u2708 %2Hz")
+    RX *poRxSelected = gmapCurveData.value(gpoSelectedCurve);
+
+
+    QString oStrFooter(QString("%1_%2Hz_%3%")
                        .arg(poCurve->title().text())
-                       .arg(poCurve->data()->sample(iIndex).x()));
+                       .arg(poCurve->data()->sample(iIndex).x())
+                       .arg(QString::number(poRxSelected->mapErr.value(gpoSelectedCurve->sample(giSelectedIndex).x()),'f',2)));
     QwtText oTxt;
     oTxt.setText(oStrFooter);
     QFont oFont("Times New Roman", 12, QFont::Bold);
@@ -1057,7 +1082,23 @@ void MainWindow::SelectedRho(QwtPlotCurve *poCurve, int iIndex)
 
         /* 启用这个按钮的作用就只是为了保存调整后的Rho结果 */
         ui->actionStore->setEnabled(true);
+
+        QString oStrFooter(QString("%1_%2Hz")
+                           .arg(poCurve->title().text())
+                           .arg(poCurve->data()->sample(iIndex).x()));
+        QwtText oTxt;
+        oTxt.setText(oStrFooter);
+        QFont oFont("Times New Roman", 12, QFont::Bold);
+        oTxt.setFont(oFont);
+        oTxt.setColor(Qt::blue);
+
+        ui->plotRho->setFooter(oTxt);
     }
+}
+
+void MainWindow::SelectedRho()
+{
+    ui->plotRho->setFooter("请选择曲线上的点！");
 }
 
 void MainWindow::rhoMoved()
@@ -1125,17 +1166,13 @@ void MainWindow::markerMoved()
     gpoErrorCurve->attach( ui->plotCurve );
 
     /* Update MSRE */
-    QString oStrFooter(QString("相对均方误差: %1%")
+    QString oStrFooter(QString("%1_%2Hz_%3%")
+                       .arg(gpoSelectedCurve->title().text())
+                       .arg(gpoSelectedCurve->data()->sample(giSelectedIndex).x())
                        .arg(QString::number(gpoSelectedRX->getErr(arE),'f',2)));
 
-    QwtText oTxt;
-    QFont oFont("Times New Roman", 12, QFont::Thin);
-    oTxt.setFont(oFont);
-    oTxt.setColor(Qt::red);
 
-    oTxt.setText(oStrFooter);
-
-    ui->plotScatter->setFooter(oTxt);
+    ui->plotCurve->setFooter(oStrFooter);
 
     /* 手动摘除散点图的点,需要开放save按键,以便用户用于保存散点图更新信息致Rx类中 */
     ui->actionSave->setEnabled(true);
@@ -1211,15 +1248,15 @@ void MainWindow::drawScatter()
     /* Read Excel file(copy), display MSRE on PlotCurve canvas(Top||Right) */
 
     //QString::number(gpoSelectedRX->getErr(arE),'f',2)
-    /* Display MSRE on footer */
-    QString oStrFooter(QString("相对均方误差: %1%")
-                       .arg( QString::number(poRxSelected->mapErr.value(gpoSelectedCurve->sample(giSelectedIndex).x()),'f',2) ));
-    QwtText oTxt;
-    QFont oFont("Times New Roman", 12, QFont::Thin);
-    oTxt.setFont(oFont);
-    oTxt.setColor(Qt::red);
-    oTxt.setText(oStrFooter);
-    ui->plotScatter->setFooter(oTxt);
+    /* Update MSRE */
+    QString oStrFooter(QString("%1_%2Hz_%3%")
+                       .arg(gpoSelectedCurve->title().text())
+                       .arg(gpoSelectedCurve->data()->sample(giSelectedIndex).x())
+                       .arg(QString::number(poRxSelected->mapErr.value(gpoSelectedCurve->sample(giSelectedIndex).x()),'f',2)));
+
+
+    ui->plotCurve->setFooter(oStrFooter);
+
     ui->plotScatter->replot();
 
     if( ui->plotScatter->isHidden())
@@ -1290,7 +1327,7 @@ void MainWindow::drawError()
     gpoErrorCurve->setSamples( aoPointF );
     gpoErrorCurve->attach( ui->plotCurve );
 
-    ui->plotCurve->setAxisScale(QwtPlot::yRight, 0, gpoErrorCurve->maxYValue());
+    ui->plotCurve->setAxisScale(QwtPlot::yRight, 0, 1.1*gpoErrorCurve->maxYValue());
 
     ui->plotCurve->replot();
 }
@@ -1324,8 +1361,6 @@ void MainWindow::drawTx(const QVector<double> adF, const QVector<double> adI)
     QList<double> listF = setF.toList();
 
     qSort(listF);
-
-    qDebugV0()<<listF;
 
     /* Fill ticks */
     QList<double> adTicks[QwtScaleDiv::NTickTypes];
@@ -1459,7 +1494,7 @@ void MainWindow::drawRx()
     {
         /* Curve title, cut MCSD_ & suffix*/
         /* Curve title, cut MCSD_ & suffix*/
-        const QwtText oTxtTitle( QString(tr("线号:%1_点号:%2_仪器号:%3_通道号:%4(%5)"))
+        const QwtText oTxtTitle( QString(tr("L%1_S%2_D%3_CH%4_%5"))
                                  .arg(poRX->goStrLineId)
                                  .arg(poRX->goStrSiteId)
                                  .arg(poRX->giDevId)
@@ -1505,6 +1540,7 @@ void MainWindow::initPlotRho()
     poPickerRho = new CanvasPickerRho( ui->plotRho );
 
     connect(poPickerRho, SIGNAL(SigSelectedRho(QwtPlotCurve*,int)), this, SLOT(SelectedRho(QwtPlotCurve*,int)));
+    connect(poPickerRho, SIGNAL(SigSelectedRho()), this, SLOT(SelectedRho()));
     connect(poPickerRho, SIGNAL(SigMoved()), this, SLOT(rhoMoved()));
     //    ui->plotRho->setCanvasBackground(QColor(29, 100, 141)); // nice blue
 
@@ -1637,8 +1673,6 @@ void MainWindow::restoreCurve()
         gpoErrorCurve->setSamples( aoPointF );
         gpoErrorCurve->attach( ui->plotCurve );
 
-        ui->plotScatter->setFooter("");
-
         ui->plotScatter->replot();
     }
 }
@@ -1668,7 +1702,7 @@ void MainWindow::on_actionCutterH_triggered()
     sMkList.poTop->setLabelAlignment(Qt::AlignLeft | Qt::AlignTop);
     sMkList.poTop->setYAxis( QwtPlot::yLeft );
     sMkList.poTop->setYValue( gpoScatter->maxYValue() + dYSacle*0.075 );
-    sMkList.poTop->setLabel(QwtText(QString("Top: Y = %1").arg(sMkList.poTop->yValue())));
+    sMkList.poTop->setLabel(QwtText(QString("Top: Y = %1").arg(QString::number(sMkList.poTop->yValue(), 'f', 0))));
     sMkList.poTop->setLinePen(Qt::black, 1.0, Qt::SolidLine);
 
     sMkList.poTop->attach( ui->plotScatter );
@@ -1679,7 +1713,7 @@ void MainWindow::on_actionCutterH_triggered()
     sMkList.poBottom->setLabelAlignment(Qt::AlignLeft | Qt::AlignBottom);
     sMkList.poBottom->setYAxis( QwtPlot::yLeft );
     sMkList.poBottom->setYValue( gpoScatter->minYValue() - dYSacle*0.075 );
-    sMkList.poBottom->setLabel(QwtText(QString("Bottom: Y = %1").arg(sMkList.poBottom->yValue())));
+    sMkList.poBottom->setLabel(QwtText(QString("Bottom: Y = %1").arg(QString::number(sMkList.poBottom->yValue(), 'f', 0))));
     sMkList.poBottom->setLinePen(Qt::black, 1.0, Qt::SolidLine);
 
     sMkList.poBottom->attach( ui->plotScatter );
@@ -1722,7 +1756,7 @@ void MainWindow::on_actionCutterV_triggered()
     sMkList.poLeft->setLabelOrientation(Qt::Vertical);
     sMkList.poLeft->setLabelAlignment(Qt::AlignLeft | Qt::AlignTop);
     sMkList.poLeft->setXValue( gpoScatter->minXValue() - dXSacle*0.02 );
-    sMkList.poLeft->setLabel(QwtText(QString("Left: X = %1").arg(sMkList.poLeft->xValue())));
+    sMkList.poLeft->setLabel(QwtText(QString("Left: X = %1").arg(QString::number(sMkList.poLeft->xValue(), 'f', 0))));
     sMkList.poLeft->setLinePen(Qt::black, 1.0, Qt::SolidLine);
 
     sMkList.poLeft->attach( ui->plotScatter );
@@ -1735,7 +1769,7 @@ void MainWindow::on_actionCutterV_triggered()
     sMkList.poRight->setLabelOrientation(Qt::Vertical);
     sMkList.poRight->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
     sMkList.poRight->setXValue( gpoScatter->maxXValue() + 0.02 );
-    sMkList.poRight->setLabel(QwtText(QString("Right: X = %1").arg(sMkList.poRight->xValue())));
+    sMkList.poRight->setLabel(QwtText(QString("Right: X = %1").arg(QString::number(sMkList.poRight->xValue(), 'f', 0))));
     sMkList.poRight->setLinePen(Qt::black, 1.0, Qt::SolidLine);
 
     sMkList.poRight->attach( ui->plotScatter );
@@ -2089,12 +2123,12 @@ void MainWindow::on_actionStore_triggered()
 {
     switch (ui->stackedWidget->currentIndex())
     {
-    case 0:
+    case 0://场值调整后，保存结果至csv _filtered.csv
         this->store();
 
         break;
 
-    case 1:
+    case 1://广域视电阻率调整后，保存结果至数据库，以备export
     {
         QMap<QwtPlotCurve*, STATION>::const_iterator it;
         for(it = gmapCurveStation.constBegin(); it!= gmapCurveStation.constEnd(); it++)
@@ -2146,7 +2180,7 @@ void MainWindow::on_actionCalRho_triggered()
         return;
     }
 
-    QList<STATION> aoStation = poDb->getStation();
+    QList<STATION> aoStation = poDb->getStation("RX");
 
     gmapCurveStation.clear();
 
@@ -2155,6 +2189,8 @@ void MainWindow::on_actionCalRho_triggered()
     gpoSelectedCurve = NULL;
 
     poPickerRho->setNULL();
+
+    poDb->cleanRho();
 
     /* 每条曲线一个thread，每个thread计算完毕了，会发射一个信号，main线程会draw Rho曲线 */
     foreach(STATION oStation, aoStation)
@@ -2226,13 +2262,16 @@ void MainWindow::showTableXY(QSqlTableModel *poModel)
 
 void MainWindow::showTableRho(CustomTableModel *poModel)
 {
+    qDebug()<<poModel->rowCount();
+
     ui->tableViewRho->setModel(poModel);
 
     /* 这里要update，因为导出表格时的依据就是前表格的model */
     ui->tableViewRho->update();
 
-    if(ui->tabWidget->currentIndex() !=4)
-        ui->tabWidget->setCurrentIndex(3);
+    //    if(ui->tabWidget->currentIndex() !=4)
+    //        ui->tabWidget->setCurrentIndex(3);
+    ui->tabWidget->setCurrentIndex(3);
 }
 
 /* 画广域视电阻率曲线图，是按了计算Rho按钮，然后计算，计算完了发信号过来， */
@@ -2290,6 +2329,8 @@ void MainWindow::drawRho(STATION oStation, QVector<double> adF, QVector<double> 
     poCurve->attach(ui->plotRho);
     poCurve->setVisible( true );
 
+    ui->plotRho->setFooter("请选中线上的点！");
+
     ui->plotRho->replot();
 }
 
@@ -2300,4 +2341,124 @@ void MainWindow::on_actionReadme_triggered()
     qexeFullPath.append("//readme.pdf");
 
     QDesktopServices::openUrl(QUrl::fromLocalFile(qexeFullPath));
+}
+
+void MainWindow::on_actionImportRho_triggered()
+{
+    QStringList aoStrRhoFileName = QFileDialog::getOpenFileNames(this,
+                                                                 "打开视电阻率文件",
+                                                                 QString("%1").arg(this->LastDirRead()),
+                                                                 "视电阻率文件(*.csv)");
+
+    if(aoStrRhoFileName.isEmpty())
+    {
+        QMessageBox::warning(this, "警告","未选中有效文件，\n请重新选择！");
+        return;
+    }
+
+    poDb->cleanRho();
+
+    foreach(QString oStrRho, aoStrRhoFileName)
+    {
+        QFile oFile(oStrRho);
+        if(!oFile.open(QIODevice::ReadOnly))
+        {
+            return;
+        }
+
+        QList<RhoResult> aoRho;
+        aoRho.clear();
+        QTextStream oStream(&oFile);
+
+        /* 首行是列头 */
+        oStream.readLine();
+
+        while( !oStream.atEnd() )
+        {
+            QString oStrLine = oStream.readLine();
+            QStringList aoStrLine = oStrLine.split(",", QString::SkipEmptyParts);
+
+            RhoResult oRho;
+
+            STATION oStation;
+            oStation.oStrLineId = aoStrLine.at(0);
+            oStation.oStrSiteId = aoStrLine.at(1);
+            oStation.iDevId = aoStrLine.at(2).toInt();
+            oStation.iDevCh = aoStrLine.at(3).toInt();
+            oStation.oStrTag = aoStrLine.at(4);
+            oRho.oStation = oStation;
+
+            oRho.dF = aoStrLine.at(5).toDouble();
+            oRho.dI = aoStrLine.at(6).toDouble();
+
+            oRho.dField = aoStrLine.at(7).toDouble();
+            QString oStrEr = aoStrLine.at(8);
+
+            /* 剃掉% */
+            oStrEr.chop(1);
+
+            oRho.dErr = oStrEr.toDouble();
+
+            oRho.dRho = aoStrLine.at(9).toDouble();
+
+            Position oAB;
+            oAB.dMX = aoStrLine.at(10).toDouble();
+            oAB.dMY = aoStrLine.at(11).toDouble();
+            oAB.dMZ = aoStrLine.at(12).toDouble();
+            oAB.dNX = aoStrLine.at(13).toDouble();
+            oAB.dNY = aoStrLine.at(14).toDouble();
+            oAB.dNZ = aoStrLine.at(15).toDouble();
+            oRho.oAB = oAB;
+
+            Position oMN;
+            oMN.dMX = aoStrLine.at(16).toDouble();
+            oMN.dMY = aoStrLine.at(17).toDouble();
+            oMN.dMZ = aoStrLine.at(18).toDouble();
+            oMN.dNX = aoStrLine.at(19).toDouble();
+            oMN.dNY = aoStrLine.at(20).toDouble();
+            oMN.dNZ = aoStrLine.at(21).toDouble();
+            oRho.oMN = oMN;
+
+            aoRho.append( oRho );
+        }
+
+        oFile.close();
+
+        poDb->importRho(aoRho);
+    }
+
+    /* draw Rho curve */
+    QList<STATION> aoStation = poDb->getStation("Rho");
+
+    foreach(STATION oStation, aoStation)
+    {
+        QPolygonF aoPoint = poDb->getRho(oStation);
+
+        QVector<double> adF;
+        QVector<double> adRho;
+        adF.clear();
+        adRho.clear();
+
+        foreach(QPointF oPointF, aoPoint)
+        {
+            adF.append( oPointF.x() );
+            adRho.append( oPointF.y() );
+        }
+        this->drawRho(oStation, adF, adRho);
+    }
+    /* Manual adjustment of apparent resistivity curve */
+    ui->actionCutterH->setEnabled(false);
+    ui->actionCutterV->setEnabled(false);
+    ui->actionExportRho->setEnabled(true);
+    ui->actionImportRX->setEnabled(false);
+    ui->actionImportTX->setEnabled(false);
+
+    ui->actionRecovery->setEnabled(true);
+
+    ui->actionSave->setEnabled(false);
+    ui->actionStore->setEnabled(false);
+
+    ui->actionCalRho->setEnabled(true);
+
+    ui->stackedWidget->setCurrentIndex(1);
 }

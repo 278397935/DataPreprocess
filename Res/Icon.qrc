@@ -32,5 +32,6 @@
         <file>horse.ico</file>
         <file>store.png</file>
         <file>readme.ico</file>
+        <file>importRho.ico</file>
     </qresource>
 </RCC>

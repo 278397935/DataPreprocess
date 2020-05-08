@@ -35,7 +35,7 @@
         <item row="0" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout" stretch="6,0,1">
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout" stretch="3,0,1">
+           <layout class="QVBoxLayout" name="verticalLayout" stretch="5,0,2">
             <item>
              <widget class="QwtPlot" name="plotCurve">
               <property name="sizePolicy">
@@ -70,6 +70,9 @@
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
+              </property>
+              <property name="lineWidth">
+               <number>0</number>
               </property>
              </widget>
             </item>
@@ -205,6 +208,7 @@
    </attribute>
    <addaction name="actionImportTX"/>
    <addaction name="actionImportRX"/>
+   <addaction name="actionImportRho"/>
    <addaction name="actionClear"/>
    <addaction name="separator"/>
    <addaction name="actionCutterH"/>
@@ -254,7 +258,10 @@
      <normaloff>:/GDC2/Icon/DataSave.png</normaloff>:/GDC2/Icon/DataSave.png</iconset>
    </property>
    <property name="text">
-    <string>保存(Ctrl+S)</string>
+    <string>保存选中点调整结果(Ctrl+S)</string>
+   </property>
+   <property name="toolTip">
+    <string>保存选中点调整结果(Ctrl+S)</string>
    </property>
   </action>
   <action name="actionClose">
@@ -335,10 +342,10 @@
      <normaloff>:/GDC2/Icon/store.png</normaloff>:/GDC2/Icon/store.png</iconset>
    </property>
    <property name="text">
-    <string>保存Rx频率域数据</string>
+    <string>存盘</string>
    </property>
    <property name="toolTip">
-    <string>保存Rx频率域数据</string>
+    <string>存盘</string>
    </property>
   </action>
   <action name="actionReadme">
@@ -351,6 +358,15 @@
    </property>
    <property name="toolTip">
     <string>说明文档</string>
+   </property>
+  </action>
+  <action name="actionImportRho">
+   <property name="icon">
+    <iconset resource="Res/Icon.qrc">
+     <normaloff>:/GDC2/Icon/importRho.ico</normaloff>:/GDC2/Icon/importRho.ico</iconset>
+   </property>
+   <property name="text">
+    <string>importRho</string>
    </property>
   </action>
  </widget>
