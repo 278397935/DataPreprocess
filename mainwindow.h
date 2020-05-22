@@ -202,12 +202,6 @@ public slots:
     /* Restore Curve */
     void restoreCurve();
 
-    /* Scatter plot Show || Hide */
-    void shiftScatter();
-
-    /* QwtPlotCurve Legend Show || Hide */
-    void shiftLegend();
-
     void shiftAllCurve(int iLogicalIndex);
 
     void shiftCurveSelect(QTreeWidgetItem* poItem ,int iCol);

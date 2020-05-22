@@ -108,41 +108,10 @@ MainWindow::MainWindow(QWidget *parent) :
     poPickerCurve = new CanvasPicker( ui->plotCurve );
     connect(poPickerCurve, SIGNAL(SigSelected(QwtPlotCurve*,int)), this, SLOT(Selected(QwtPlotCurve*,int)));
 
-    ui->buttonScatterShift->setFixedHeight(12);
-    ui->buttonScatterShift->setIconSize(QSize(10, 10));
-    ui->buttonScatterShift->setStyleSheet( "QPushButton{background: rgb(255, 255, 255);"
-                                           "border-radius:5px;"
-                                           "border-style: solid;"
-                                           "border-width: 1px 1px 1px 1px; "
-                                           "spacing: 0px;"
-                                           "padding: 6px 0px ;}"
-                                           "QPushButton::hover{ background: rgb(180, 180, 180);"
-                                           "border-radius:5px;"
-                                           "border-style: solid;}" );
-    ui->buttonScatterShift->setFlat(true);
-
     this->initPlotCurve();
 
     this->initPlotScatter();
 
-    connect(ui->buttonScatterShift,SIGNAL(clicked()),this, SLOT(shiftScatter()));
-
-
-    /* QwtLegend */
-    ui->pushButtonLegend->setFixedWidth(12);
-    ui->pushButtonLegend->setIconSize(QSize(10, 10));
-    ui->pushButtonLegend->setStyleSheet( "QPushButton{background: rgb(255, 255, 255);"
-                                         "border-radius:5px;"
-                                         "border-style: solid;"
-                                         "border-width: 1px 1px 1px 1px; "
-                                         "spacing: 0px;"
-                                         "padding: 6px 0px ;}"
-                                         "QPushButton::hover{ background: rgb(180, 180, 180);"
-                                         "border-radius:5px;"
-                                         "border-style: solid;}" );
-    ui->pushButtonLegend->setFlat(true);
-
-    connect(ui->pushButtonLegend,SIGNAL(clicked()),this, SLOT(shiftLegend()));
 
     /* Init Marker line */
     sMkList.poTop    = NULL;
@@ -212,16 +181,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(poCalRho, SIGNAL(SigRho(STATION, QVector<double>, QVector<double>)), this, SLOT(drawRho(STATION, QVector<double>, QVector<double>)));
 
-
-    ui->verticalLayout->setMargin(0);
-    ui->horizontalLayout->setMargin(0);
-    ui->horizontalLayout_2->setMargin(0);
-    ui->horizontalLayout_3->setMargin(0);
-
     aoStrExisting.clear();
 
     bModifyField = false;
     bModifyRho   = false;
+
+    ui->splitter->setStretchFactor(0, 3);
+    ui->splitter->setStretchFactor(1, 1);
+    ui->splitter_2->setStretchFactor(0, 5);
+    ui->splitter_2->setStretchFactor(1, 1);
 }
 
 MainWindow::~MainWindow()
@@ -435,12 +403,6 @@ void MainWindow::on_actionClear_triggered()
         ui->treeWidgetLegend->clear();
 
         ui->plotCurve->setTitle("");
-
-        if( !ui->plotScatter->isHidden())
-        {
-            ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterShow.png"));
-            ui->plotScatter->hide();
-        }
 
         aoStrExisting.clear();
 
@@ -857,8 +819,6 @@ void MainWindow::initPlotCurve()
  */
 void MainWindow::initPlotScatter()
 {
-    ui->plotScatter->hide();
-
     ui->plotScatter->setFrameStyle(QFrame::NoFrame);
     ui->plotScatter->enableAxis(QwtPlot::xBottom, true);
     ui->plotScatter->enableAxis(QwtPlot::yLeft,   true);
@@ -918,42 +878,6 @@ void MainWindow::initPlotScatter()
     gpoScatter->attach(ui->plotScatter);
 
     ui->plotScatter->replot();
-}
-
-/**********************************************************************************
- * Show or Hide scatter graph
- *
- */
-void MainWindow::shiftScatter()
-{
-    bool bFlag;
-    bFlag = ui->plotScatter->isHidden();
-    if(bFlag == true)
-    {
-        ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterHide.png"));
-        ui->plotScatter->show();
-    }
-    else
-    {
-        ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterShow.png"));
-        ui->plotScatter->hide();
-    }
-}
-
-void MainWindow::shiftLegend()
-{
-    bool bFlag;
-    bFlag = ui->treeWidgetLegend->isHidden();
-    if(bFlag == true)
-    {
-        ui->pushButtonLegend->setIcon(QIcon(":/GDC2/Icon/NavOpen.png"));
-        ui->treeWidgetLegend->show();
-    }
-    else
-    {
-        ui->pushButtonLegend->setIcon(QIcon(":/GDC2/Icon/NavClose.png"));
-        ui->treeWidgetLegend->hide();
-    }
 }
 
 void MainWindow::shiftAllCurve(int iLogicalIndex)
@@ -1258,12 +1182,6 @@ void MainWindow::drawScatter()
     ui->plotCurve->setFooter(oStrFooter);
 
     ui->plotScatter->replot();
-
-    if( ui->plotScatter->isHidden())
-    {
-        ui->buttonScatterShift->setIcon(QIcon(":/GDC2/Icon/ScatterHide.png"));
-        ui->plotScatter->show();
-    }
 
     /* 都已经挑数据了,还添加什么文件,先干啥去了~? */
     ui->actionImportRX->setEnabled(false);
