@@ -287,6 +287,12 @@ void MainWindow::on_actionExportRX_triggered()
 
     poModel->select();
 
+    /* 在操作结果前先通过fetchmore()来获取所有的结果  more then 256 */
+    while(poModel->canFetchMore())
+    {
+        poModel->fetchMore();
+    }
+
     QStringList oStrList;//记录数据库中的一行报警数据
     oStrList.clear();
 
@@ -313,6 +319,8 @@ void MainWindow::on_actionExportRX_triggered()
         {
             for(int j = 0; j < poModel->columnCount(); j++)
             {
+                qDebugV0()<<poModel->rowCount()<<poModel->columnCount()<<i<<j;
+
                 oStrList.insert(j,poModel->data(poModel->index(i,j)).toString());//把每一行的每一列数据读取到strList中
             }
 
