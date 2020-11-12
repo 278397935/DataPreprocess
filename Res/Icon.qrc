@@ -33,5 +33,6 @@
         <file>store.png</file>
         <file>readme.ico</file>
         <file>importRho.ico</file>
+        <file>exportAvg.ico</file>
     </qresource>
 </RCC>

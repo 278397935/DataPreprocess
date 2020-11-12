@@ -152,7 +152,12 @@ private:
 
 private slots:
     void on_actionImportTX_triggered();
+
     void on_actionImportRX_triggered();
+
+    /* 导出RX平均值供马工使用 */
+    void on_actionExportRX_triggered();
+
     void on_actionExportRho_triggered();
 
     void on_actionClose_triggered();

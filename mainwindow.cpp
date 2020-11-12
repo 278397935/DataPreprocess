@@ -68,7 +68,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    this->setWindowTitle("广域数据预处理工具 v2.1");
+    this->setWindowTitle("广域数据预处理工具 v2.2 (Design for Engineer Ma)");
 
     qRegisterMetaType<STATION_INFO>("STATION_INFO");
     qRegisterMetaType< QVector<qreal> >("QVector<qreal>");
@@ -197,6 +197,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+/* 打开发射端电流文件 */
 void MainWindow::on_actionImportTX_triggered()
 {
     QString oStrFileName = QFileDialog::getOpenFileName(this,
@@ -267,6 +268,68 @@ void MainWindow::on_actionImportRX_triggered()
     }
 
     ui->actionCalRho->setEnabled(true);
+}
+
+/* 导出RX平均值供马工使用 */
+void MainWindow::on_actionExportRX_triggered()
+{
+    /* Import RX */
+    poDb->importRX(gapoRX);
+
+    QString oStrFileName = QFileDialog::getSaveFileName(this,
+                                                        tr("保存当前接收数据"),
+                                                        "",
+                                                        tr("平均场值文件(*.csv)"));
+
+    QSqlTableModel *poModel = new QSqlTableModel(poDb);
+
+    poModel->setTable("rx");
+
+    poModel->select();
+
+    QStringList oStrList;//记录数据库中的一行报警数据
+    oStrList.clear();
+
+    QString oStrString;
+
+    QFile oFile(oStrFileName);
+
+    if (oFile.open(QIODevice::WriteOnly|QIODevice::Text|QIODevice::Truncate))
+    {
+        QString oStrColumnHead = QString("%1,%2,%3,%4,%5,%6,%7,%8,%9\n")
+                .arg("线号")
+                .arg("点号")
+                .arg("设备号")
+                .arg("通道号")
+                .arg("分量标识")
+                .arg("频率")
+                .arg("电流")
+                .arg("平均场值")
+                .arg("相对均方误差");
+
+        oFile.write(oStrColumnHead.toLocal8Bit());
+
+        for (int i = 0; i < poModel->rowCount(); i++)
+        {
+            for(int j = 0; j < poModel->columnCount(); j++)
+            {
+                oStrList.insert(j,poModel->data(poModel->index(i,j)).toString());//把每一行的每一列数据读取到strList中
+            }
+
+            //给两个列数据之前加","号，一行数据末尾加回车
+            oStrString = oStrList.join(",")+"\n";
+
+            //记录一行数据后清空，再记下一行数据
+            oStrList.clear();
+
+            //使用方法：转换为Utf8格式后在windows下的excel打开是乱码,
+            //可先用notepad++打开并转码为unicode，再次用excel打开即可。
+            oFile.write(oStrString.toUtf8());
+        }
+
+        oFile.flush();
+        oFile.close();
+    }
 }
 
 /*  Close Application */
@@ -1902,9 +1965,10 @@ void MainWindow::on_actionExportRho_triggered()
 
     QFile oFile(oStrFileName);
     bool openOk = oFile.open( QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text );
+
     if(!openOk)
     {
-        return ;
+        return;
     }
 
     QTextStream outStream(&oFile);

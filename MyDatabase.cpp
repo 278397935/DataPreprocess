@@ -349,11 +349,11 @@ QVector<double> MyDatabase::getF(STATION oStation)
     {
         adF.append(oQuery.value("F").toDouble());
     }
-//    qDebugV0()<<oStation.oStrLineId
-//             <<oStation.oStrSiteId
-//            <<oStation.iDevId
-//           <<oStation.iDevCh
-//          <<adF;
+    //    qDebugV0()<<oStation.oStrLineId
+    //             <<oStation.oStrSiteId
+    //            <<oStation.iDevId
+    //           <<oStation.iDevCh
+    //          <<adF;
 
     return adF;
 }

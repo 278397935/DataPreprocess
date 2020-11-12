@@ -59,7 +59,7 @@ public:
     void importTX(QString oStrFileName);
 
     /* 将接收端场值写入到数据库中 */
-    void importRX(QVector<RX *> apoRX);
+    void importRX(QVector<RX *> apoRX); 
 
     /* 将AB和测点坐标写入到数据库中 */
     bool importXY(QString oStrFileName);

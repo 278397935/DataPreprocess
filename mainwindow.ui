@@ -190,6 +190,7 @@
    <addaction name="actionRecovery"/>
    <addaction name="separator"/>
    <addaction name="actionStore"/>
+   <addaction name="actionExportRX"/>
    <addaction name="separator"/>
    <addaction name="actionCalRho"/>
    <addaction name="separator"/>
@@ -340,6 +341,18 @@
    </property>
    <property name="text">
     <string>importRho</string>
+   </property>
+  </action>
+  <action name="actionExportRX">
+   <property name="icon">
+    <iconset resource="Res/Icon.qrc">
+     <normaloff>:/GDC2/Icon/exportAvg.ico</normaloff>:/GDC2/Icon/exportAvg.ico</iconset>
+   </property>
+   <property name="text">
+    <string>导出平均场值</string>
+   </property>
+   <property name="toolTip">
+    <string>导出平均场值</string>
    </property>
   </action>
  </widget>
